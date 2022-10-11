@@ -9,7 +9,7 @@ export default class Keyboard {
   #keys
 
   /**
-   *
+   * Elemento objetivo
    *
    * @type {Window|Document|Element}
    */
@@ -26,6 +26,10 @@ export default class Keyboard {
 
   reset() {
     this.#keys.clear()
+  }
+
+  stateOf([code]) {
+    return this.#keys.get(code) ? 1 : 0
   }
 
   isPressed(code) {

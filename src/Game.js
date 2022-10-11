@@ -1,102 +1,85 @@
-import Core from './core/Core'
 import Loop from './core/Loop'
-import Process from './core/Process'
-import Resize from './canvas/Resize'
-import Keyboard from './input/Keyboard'
-import Mouse from './input/Mouse'
-import Renderer from './renderer/Renderer'
-import Gamepads from './input/Gamepads'
-import Pool from './core/Pool'
-import Sound from './audio/Sound'
-import Channels from './audio/Channels'
-import Music from './audio/Music'
-import FrameCounter from './core/FrameCounter'
 import Resources from './core/Resources'
+import Scheduler from './core/Scheduler'
+import FrameCounter from './core/FrameCounter'
+import Audio from './audio/Audio'
+import Viewport from './canvas/Viewport'
+import Renderer from './renderer/Renderer'
+import Input from './input/Input'
+import EntityProvider from './core/EntityProvider'
+import EntityPoolProvider from './core/EntityPoolProvider'
+import Collider from './core/Collider'
 
 export default class Game {
   /**
    * Input
    */
-  #keyboard
-  #mouse
-  #gamepads
+  #input
 
   /**
    * Core
    */
   #loop
-  #core
-  #pool
+  #scheduler
   #resources
+  #collider
 
   /**
    * Video
    */
   #canvas
-  #resize
+  #viewport
   #renderer
   #frameCounter
 
   /**
    * Audio
    */
-  #sound
-  #channels
-  #music
+  #audio
 
-  constructor({ canvas, audioContext = new AudioContext() }) {
+  constructor({ canvas, bindings = new Map(), audioContext = new AudioContext() }) {
     const context = canvas.getContext('2d')
     this.#canvas = canvas
-    this.#resize = new Resize({ canvas }) // TODO: Cambiarle el nombre a esto por "viewport"
-    this.#keyboard = new Keyboard()
-    this.#mouse = new Mouse(canvas)
-    this.#gamepads = new Gamepads()
-    this.#pool = new Pool(2048, Process.create)
-    this.#core = new Core(
-      () => {
-        const process = this.#pool.allocate()
-        process.reset()
-        return process
-      },
-      (process) => this.#pool.deallocate(process)
-    )
+    this.#viewport = new Viewport({ canvas })
+    this.#input = new Input({ target: canvas, bindings })
+    this.#scheduler = new Scheduler(new EntityPoolProvider())
     this.#resources = new Resources()
     this.#frameCounter = new FrameCounter()
-    this.#renderer = new Renderer({ context, core: this.#core })
+    this.#collider = new Collider()
+    this.#renderer = new Renderer({ context })
     this.#renderer.debug.push(() => `${this.#frameCounter.framesPerSecond}fps`)
     this.#loop = new Loop({
       pipeline: [
         (time) => this.#frameCounter.update(time),
-        () => this.#resize.update(),
-        () => this.#gamepads.update(),
-        () => this.#core.update(),
+        () => this.#viewport.update(),
+        () => this.#input.update(),
+        () => this.#collider.update(),
+        () => this.#scheduler.update(),
         (time) => this.#renderer.render(time),
         (time) => this.#renderer.renderDebug(time)
       ]
     })
-    this.#channels = new Channels({ audioContext })
-    this.#sound = new Sound({ audioContext, channels: this.#channels })
-    this.#music = new Music({ audioContext, channels: this.#channels })
+    this.#audio = new Audio({ audioContext })
   }
 
-  get keyboard() {
-    return this.#keyboard
+  get input() {
+    return this.#input
   }
 
-  get mouse() {
-    return this.#mouse
+  get audio() {
+    return this.#audio
   }
 
-  get resize() {
-    return this.#resize
+  get viewport() {
+    return this.#viewport
   }
 
-  get core() {
-    return this.#core
+  get collider() {
+    return this.#collider
   }
 
-  get pool() {
-    return this.#pool
+  get scheduler() {
+    return this.#scheduler
   }
 
   get resources() {
@@ -107,47 +90,39 @@ export default class Game {
     return this.#canvas
   }
 
-  get resize() {
-    return this.#resize
+  get viewport() {
+    return this.#viewport
   }
 
   get renderer() {
     return this.#renderer
   }
 
-  get sound() {
-    return this.#sound
-  }
-
-  get music() {
-    return this.#music
-  }
-
   setMode({ mode, width = undefined, height = undefined, scale = undefined }) {
-    this.#resize.mode = mode
+    this.#viewport.mode = mode
     if (Number.isFinite(width)) {
-      this.#resize.width = width
+      this.#viewport.width = width
     }
     if (Number.isFinite(height)) {
-      this.#resize.height = height
+      this.#viewport.height = height
     }
     if (Number.isFinite(scale)) {
-      this.#resize.scale = scale
+      this.#viewport.scale = scale
     }
-    this.#resize.update()
+    this.#viewport.update()
   }
 
   start() {
-    this.#channels.start()
-    this.#keyboard.start()
-    this.#mouse.start()
+    this.#viewport.start()
+    this.#audio.start()
+    this.#input.start()
     this.#loop.start()
   }
 
   stop() {
-    this.#channels.stop()
-    this.#keyboard.stop()
-    this.#mouse.stop()
+    this.#viewport.stop()
+    this.#audio.stop()
+    this.#input.stop()
     this.#loop.stop()
   }
 }

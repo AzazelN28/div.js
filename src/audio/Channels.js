@@ -14,8 +14,12 @@ export class Channel {
     this.#gain = gain
   }
 
+  get name() {
+    return this.#name
+  }
+
   get gain() {
-    return this.gain
+    return this.#gain
   }
 }
 
@@ -49,7 +53,14 @@ export default class Channels {
     this.#channels = new Map()
   }
 
+  has(name) {
+    return this.#channels.has(name)
+  }
+
   get(name) {
+    if (!this.#channels.has(name)) {
+      return undefined
+    }
     return this.#channels.get(name)
   }
 

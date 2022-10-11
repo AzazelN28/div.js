@@ -70,29 +70,31 @@ export default class Resources {
     this.#loading.set(url, new Promise((resolve, reject) => this.#promises.set(url, { resolve, reject })))
     try {
       // TODO: Resolver la url con el baseURL
-      const response = await fetch(this.#baseURL + url)
+      const parsedURL = new URL(url, this.#baseURL)
+      const response = await fetch(parsedURL)
       const contentType = response.headers.get('content-type')
-      if (contentType.startsWith('image/')) {
+      const extension = parsedURL.pathname.slice(parsedURL.pathname.lastIndexOf('.'))
+      if (contentType.startsWith('image/') || ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(extension)) {
         const blob = await response.blob()
         const blobURL = URL.createObjectURL(blob)
         const image = new Image()
         image.src = blobURL
         this.#resources.set(url, image)
-      } else if (contentType.startsWith('video/')) {
+      } else if (contentType.startsWith('video/') || ['.mp4', '.webm', '.ogv'].includes(extension)) {
         const blob = await response.blob()
         const blobURL = URL.createObjectURL(blob)
         const video = document.createElement('video')
         video.src = blobURL
         this.#resources.set(url, image)
-      } else if (contentType.startsWith('audio/')) {
+      } else if (contentType.startsWith('audio/') || ['.mp3', '.wav', '.oga'].includes(extension)) {
         const audioContext = new AudioContext()
         const arrayBuffer = await response.arrayBuffer()
-        const audioBuffer = audioContext.decodeAudioData(arrayBuffer)
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
         this.#resources.set(url, audioBuffer)
-      } else if (contentType.startsWith('application/json')) {
+      } else if (contentType.startsWith('application/json') || ['.json'].includes(extension)) {
         const json = await response.json()
         this.#resources.set(url, json)
-      } else if (contentType.startsWith('text/plain')) {
+      } else if (contentType.startsWith('text/plain') || ['.txt', '.csv', '.tsv'].includes(extension)) {
         const text = await response.text()
         this.#resources.set(url, text)
       } else {

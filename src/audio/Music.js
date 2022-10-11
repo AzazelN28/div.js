@@ -4,7 +4,13 @@ export default class Music {
    */
   #audioContext
 
-  constructor({ audioContext }) {
+  /**
+   * @type {Channels}
+   */
+  #channels
+
+  constructor({ audioContext, channels }) {
+    this.#channels = channels
     this.#audioContext = audioContext
   }
 

@@ -1,10 +1,11 @@
 import Timer from '../core/Timer'
+import RenderableComponent from '../components/RenderableComponent'
 
 /**
  * TODO: Aquí se mezclan demasiadas cosas, como por ejemplo, la animación
  * y el render.
  */
-export default class RenderableSpritesheet {
+export default class RenderableSpritesheet extends RenderableComponent {
   /**
    * @type {CanvasImageSource}
    */
@@ -18,7 +19,8 @@ export default class RenderableSpritesheet {
   #framesPerSecond
   #timer
 
-  constructor({ source, width, height, totalFrames, framesPerSecond = 24 }) {
+  constructor({ entity, source, width, height, totalFrames, framesPerSecond = 24 } = {}) {
+    super({ entity })
     this.#source = source
     this.#width = width
     this.#height = height
@@ -28,6 +30,14 @@ export default class RenderableSpritesheet {
     this.#totalFrames = totalFrames
     this.#framesPerSecond = framesPerSecond
     this.#timer = new Timer()
+  }
+
+  get columns() {
+    return this.#columns
+  }
+
+  get rows() {
+    return this.#rows
   }
 
   get source() {
@@ -51,7 +61,8 @@ export default class RenderableSpritesheet {
   }
 
   get sy() {
-    return Math.floor(this.#currentFrame / this.#columns) * this.#height
+    const row = Math.floor(this.#currentFrame / this.#columns)
+    return (row % this.#rows) * this.#height
   }
 
   get sw() {
@@ -62,10 +73,18 @@ export default class RenderableSpritesheet {
     return (this.#height)
   }
 
+  get progress() {
+    return this.#currentFrame / this.#totalFrames
+  }
+
   animate() {
-    if (this.#totalFrames > 0 && this.#timer.time >= 1000 / this.#framesPerSecond) {
-      this.#currentFrame = (this.#currentFrame + 1) % this.#totalFrames
-      this.#timer.reset()
+    if (this.#totalFrames > 0 && this.#timer.elapsed(1000 / this.#framesPerSecond)) {
+      this.#currentFrame++
+      if (this.#currentFrame === this.#totalFrames) {
+        this.#currentFrame = 0
+        return true
+      }
     }
+    return false
   }
 }

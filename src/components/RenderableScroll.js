@@ -1,7 +1,9 @@
 import Point from '../math/Point'
+import RenderableComponent from '../components/RenderableComponent'
 
-export class RenderableScrollLayer {
-  constructor({ source }) {
+export class RenderableScrollLayer extends RenderableComponent {
+  constructor({ entity, source } = {}) {
+    super({ entity })
     this.source = source
     // TODO: Esto debería estar en una clase Transform o algo del estilo.
     this.position = new Point()

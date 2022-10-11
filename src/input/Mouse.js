@@ -77,6 +77,10 @@ export default class Mouse {
     }
   }
 
+  stateOf([button]) {
+    return this.#buttons.get(button) ? 1 : 0
+  }
+
   isPressed(button) {
     return this.#buttons.get(button) ?? false
   }

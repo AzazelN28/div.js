@@ -94,20 +94,22 @@ export default class Rect {
   }
 
   intersects({ left, right, top, bottom }) {
-    if (this.top > bottom || this.bottom < top) // en el eje y no coinciden
+    if (this.top > bottom || this.bottom < top) {
+      // en el eje y no coinciden
       return false
-
-    if (this.left > right || this.right < left) // en el eje x no coinciden
+    }
+    if (this.left > right || this.right < left) {
+      // en el eje x no coinciden
       return false
-
+    }
     return true
   }
 
   toFixed(fractionDigits = 0) {
-    return `Rect(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)}, ${this.width.toFixed(fractionDigits)}, ${this.height.toFixed(fractionDigits)})`
+    return `${this.constructor.name}(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)}, ${this.width.toFixed(fractionDigits)}, ${this.height.toFixed(fractionDigits)})`
   }
 
   toString() {
-    return `Rect(${this.x}, ${this.y}, ${this.width}, ${this.height})`
+    return `${this.constructor.name}(${this.x}, ${this.y}, ${this.width}, ${this.height})`
   }
 }

@@ -1,16 +1,17 @@
-import RenderableRect from './RenderableRect'
-import RenderableScroll from './RenderableScroll'
-import RenderableSpritesheet from './RenderableSpritesheet'
-import RenderableText from './RenderableText'
+import RenderableRect from '../components/RenderableRect'
+import RenderableScroll from '../components/RenderableScroll'
+import RenderableSpritesheet from '../components/RenderableSpritesheet'
+import RenderableSprite from '../components/RenderableSprite'
+import RenderableText from '../components/RenderableText'
 
 export default class Renderer {
   #context
-  #core
-  #debug
+  #components = new Set()
+  #debug = []
 
-  constructor({ context, core }) {
+  constructor({ context }) {
     this.#context = context
-    this.#core = core
+    this.#components = new Set()
     this.#debug = []
   }
 
@@ -18,35 +19,73 @@ export default class Renderer {
     return this.#debug
   }
 
+  createComponent(constructor, ...args) {
+    const component = new constructor(...args)
+    component.renderer = this
+    this.#components.add(component)
+    return component
+  }
+
+  destroyComponent(component) {
+    component.entity = null
+    return this.#components.delete(component)
+  }
+
+  createText(...args) {
+    return this.createComponent(RenderableText, ...args)
+  }
+
+  createRect(...args) {
+    return this.createComponent(RenderableRect, ...args)
+  }
+
+  // TODO: Esto debería llamarse algo como "static"
+  createSprite(...args) {
+    return this.createComponent(RenderableSprite, ...args)
+  }
+
+  // TODO: Esto debería llamarse algo como "animated"
+  createSpritesheet(...args) {
+    return this.createComponent(RenderableSpritesheet, ...args)
+  }
+
+  createScroll(...args) {
+    return this.createComponent(RenderableScroll, ...args)
+  }
+
   render(time) {
     this.#context.clearRect(0, 0, this.#context.canvas.width, this.#context.canvas.height)
-    for (const process of this.#core.processes) {
+    for (const component of this.#components) {
+      if (!component.entity) {
+        continue
+      }
+      const transform = component.entity.get('transform')
       this.#context.save()
-      this.#context.translate(process.position.x, process.position.y)
-      this.#context.rotate(process.rotation)
-      this.#context.scale(process.scale.x, process.scale.y)
-      this.#context.globalAlpha = process.opacity
-      this.#context.globalCompositeOperation = process.compositeOperation
-      if (process.renderable instanceof RenderableText) {
-        this.#context.fillStyle = process.renderable.fillStyle
-        this.#context.fillText(process.renderable.text, -process.pivot.x, -process.pivot.y)
-      } else if (process.renderable instanceof RenderableSpritesheet) {
+      this.#context.translate(transform.position.x, transform.position.y)
+      this.#context.rotate(transform.rotation)
+      this.#context.scale(transform.scale.x, transform.scale.y)
+      this.#context.globalAlpha = component.opacity
+      this.#context.globalCompositeOperation = component.compositeOperation
+      if (component instanceof RenderableText) {
+        this.#context.fillStyle = component.fillStyle
+        this.#context.fillText(component.text, -component.pivot.x, -component.pivot.y)
+      } else if (component instanceof RenderableSpritesheet) {
         this.#context.drawImage(
-          process.renderable.source,
-          process.renderable.sx,
-          process.renderable.sy,
-          process.renderable.sw,
-          process.renderable.sh,
-          -process.pivot.x,
-          -process.pivot.y,
-          process.renderable.sw,
-          process.renderable.sh
+          component.source,
+          component.sx,
+          component.sy,
+          component.sw,
+          component.sh,
+          -component.pivot.x,
+          -component.pivot.y,
+          component.sw,
+          component.sh
         )
-      } else if (process.renderable instanceof Image || process.renderable instanceof ImageBitmap) {
-        this.#context.drawImage(process.renderable, -process.pivot.x, -process.pivot.y)
-      } else if (process.renderable instanceof RenderableScroll) {
-        for (let layerIndex = 0; layerIndex < process.renderable.layers.length; layerIndex++) {
-          const layer = process.renderable.layers[layerIndex]
+      } else if (component instanceof RenderableSprite) {
+        this.#context.drawImage(component.source, -component.pivot.x, -component.pivot.y)
+      } else if (component instanceof RenderableScroll) {
+        for (let layerIndex = 0; layerIndex < component.layers.length; layerIndex++) {
+          const layer = component.layers[layerIndex]
           this.#context.save()
           this.#context.translate(layer.position.x, layer.position.y)
           this.#context.rotate(layer.rotation)
@@ -57,14 +96,14 @@ export default class Renderer {
           )
           this.#context.restore()
         }
-      } else if (process.renderable instanceof RenderableRect) {
-        if (process.renderable.fill) {
-          this.#context.fillStyle = process.renderable.fill
-          this.#context.fillRect(process.renderable.rect.x, process.renderable.rect.y, process.renderable.rect.width, process.renderable.rect.height)
+      } else if (component instanceof RenderableRect) {
+        if (component.fill) {
+          this.#context.fillStyle = component.fill
+          this.#context.fillRect(component.rect.x, component.rect.y, component.rect.width, component.rect.height)
         }
-        if (process.renderable.stroke) {
-          this.#context.strokeStyle = process.renderable.stroke
-          this.#context.strokeRect(process.renderable.rect.x, process.renderable.rect.y, process.renderable.rect.width, process.renderable.rect.height)
+        if (component.stroke) {
+          this.#context.strokeStyle = component.stroke
+          this.#context.strokeRect(component.rect.x, component.rect.y, component.rect.width, component.rect.height)
         }
       }
       this.#context.restore()

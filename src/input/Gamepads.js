@@ -1,12 +1,21 @@
 import { addEventListeners } from '../event/Helper';
 
 export default class Gamepads {
-  #target
+  /**
+   * Lista de gamepads
+   *
+   * @type {Array<Gamepad>}
+   */
   #gamepads
+
+  /**
+   * Número de gamepads conectados
+   *
+   * @type {number}
+   */
   #connected
 
-  constructor(target = window) {
-    this.#target = target
+  constructor() {
     this.#gamepads = null
     this.#connected = 0
   }
@@ -19,6 +28,11 @@ export default class Gamepads {
     }
   }
 
+  /**
+   * Número de gamepads conectados.
+   *
+   * @type {number}
+   */
   get connected() {
     return this.#connected
   }
@@ -35,11 +49,31 @@ export default class Gamepads {
     }
   }
 
+  stateOf(path) {
+    const [index, type, subindex] = path
+    if (index < 0 || index >= this.#gamepads.length) {
+      throw new Error('Invalid gamepad index')
+    }
+
+    const gamepad = this.#gamepads[index]
+    if (!gamepad) {
+      return 0
+    }
+
+    if (type === 'button') {
+      return gamepad.buttons[subindex]?.value ?? 0
+    } else if (type === 'axis') {
+      return gamepad.axes[subindex] ?? 0
+    } else {
+      throw new Error('Invalid state path')
+    }
+  }
+
   start() {
-    addEventListeners(this.#target, ['gamepadconnected', 'gamepaddisconnected'], this.#listener)
+    addEventListeners(window, ['gamepadconnected', 'gamepaddisconnected'], this.#listener)
   }
 
   stop() {
-    removeEventListeners(this.#target, ['gamepadconnected', 'gamepaddisconnected'], this.#listener)
+    removeEventListeners(window, ['gamepadconnected', 'gamepaddisconnected'], this.#listener)
   }
 }
