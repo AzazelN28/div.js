@@ -1,3 +1,5 @@
+import Scalar from './Scalar'
+
 export default class Vector2 {
   static distanceBetween({ x: ax, y: ay }, { x: bx, y: by }) {
     return Math.hypot(ax - bx, ay - by)
@@ -8,7 +10,7 @@ export default class Vector2 {
   }
 
   /**
-   * Punto
+   * Vector bidimensional
    *
    * @param {number} x
    * @param {number} y
@@ -34,6 +36,14 @@ export default class Vector2 {
    */
   get direction() {
     return Math.atan2(this.y, this.x)
+  }
+
+  get isFinite() {
+    return Number.isFinite(this.x) && Number.isFinite(this.y)
+  }
+
+  get isInteger() {
+    return Number.isInteger(this.x) && Number.isInteger(this.y)
   }
 
   set(x, y) {
@@ -143,13 +153,43 @@ export default class Vector2 {
     return this
   }
 
+  equal({ x, y }) {
+    return Scalar.equal(this.x, x)
+        && Scalar.equal(this.y, y)
+  }
+
+  greater({ x, y }) {
+    return Scalar.greaterOrEqual(this.x, x)
+        && Scalar.greaterOrEqual(this.y, y)
+  }
+
+  less({ x, y }) {
+    return Scalar.less(this.x, x)
+        && Scalar.less(this.y, y)
+  }
+
+  greaterOrEqual({ x, y }) {
+    return Scalar.greaterOrEqual(this.x, x)
+        && Scalar.greaterOrEqual(this.y, y)
+  }
+
+  lessOrEqual({ x, y }) {
+    return Scalar.lessOrEqual(this.x, x)
+        && Scalar.lessOrEqual(this.y, y)
+  }
+
+  almostEqual({ x, y }, epsilon) {
+    return Scalar.almostEqual(this.x, x, epsilon)
+        && Scalar.almostEqual(this.y, y, epsilon)
+  }
+
   toFixed(fractionDigits = 0) {
-    return `${this.constructor.name}(${this.x.toFixed(
+    return `Vector2(${this.x.toFixed(
       fractionDigits
     )}, ${this.y.toFixed(fractionDigits)})`
   }
 
   toString() {
-    return `${this.constructor.name}(${this.x}, ${this.y})`
+    return `Vector2(${this.x}, ${this.y})`
   }
 }

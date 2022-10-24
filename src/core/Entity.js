@@ -1,15 +1,10 @@
-import TransformComponent from '../components/TransformComponent'
 import Task from './Task'
 
 export default class Entity extends Task {
   #components = new Map()
 
-  constructor() {
-    super()
-    this.#components.set('transform', new TransformComponent({ entity: this }))
-  }
-
   /**
+   * Establece un componente.
    *
    * @param {string} name
    * @param {EntityComponent} component
@@ -19,14 +14,32 @@ export default class Entity extends Task {
     this.#components.set(name, component)
   }
 
+  /**
+   * Comprueba si existe un componente.
+   *
+   * @param {string} name
+   * @returns {boolean}
+   */
   has(name) {
     return this.#components.has(name)
   }
 
+  /**
+   * Devuelve un componente
+   *
+   * @param {string} name
+   * @returns {EntityComponent}
+   */
   get(name) {
     return this.#components.get(name)
   }
 
+  /**
+   * Borra un componente.
+   *
+   * @param {string} name
+   * @returns {boolean}
+   */
   delete(name) {
     if (!this.#components.has(name)) {
       return false

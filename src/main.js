@@ -5,6 +5,8 @@ import Game from './Game'
 import Timer from './core/Timer'
 import Random from './math/Random'
 import Rect from './math/Rect'
+import CompositeOperation from './2d/systems/CompositeOperation'
+import TransformComponent from './2d/components/TransformComponent'
 
 const canvas = document.querySelector('canvas')
 const game = new Game({
@@ -22,6 +24,7 @@ game.start()
 window.game = game
 
 function * ProjectileExplosionBehaviour(game, x, y) {
+  this.set('transform', new TransformComponent())
   const renderable = game.renderer.createSpritesheet({
     source: game.resources.get('/assets/explosion-4x.png'),
     width: 64,
@@ -31,7 +34,7 @@ function * ProjectileExplosionBehaviour(game, x, y) {
 
   renderable.size.set(64, 64)
   renderable.pivot.copy(renderable.size).scale(0.5)
-  renderable.compositeOperation = 'lighten'
+  renderable.compositeOperation = CompositeOperation.LIGHTER
 
   this.set('renderable', renderable)
 
@@ -45,6 +48,7 @@ function * ProjectileExplosionBehaviour(game, x, y) {
 }
 
 function * ProjectileBehaviour(game, x, y) {
+  this.set('transform', new TransformComponent())
   const collidable = game.collider.createRect({
     rect: new Rect(new Point(-8, -18), new Point(16, 36))
   })
@@ -89,6 +93,7 @@ function * ProjectileBehaviour(game, x, y) {
 }
 
 function * EnemyBehaviour(game) {
+  this.set('transform', new TransformComponent())
   const collidable = game.collider.createRect({
     rect: new Rect(new Point(-64, -64), new Point(128, 128))
   })
@@ -159,6 +164,7 @@ function * EnemyBehaviour(game) {
 }
 
 async function * LoaderBehaviour(game) {
+  this.set('transform', new TransformComponent())
   const transform = this.get('transform')
   transform.position.set(game.viewport.rect.centerX, game.viewport.rect.centerY)
 
@@ -175,6 +181,7 @@ async function * LoaderBehaviour(game) {
 }
 
 async function * LevelBehaviour(game) {
+  this.set('transform', new TransformComponent())
   game.setMode({ mode: ResizeMode.NONE, width: 1280, height: 800 })
 
   const timer = new Timer()
@@ -224,6 +231,7 @@ async function * LevelBehaviour(game) {
 }
 
 function * PlayerBehaviour (game) {
+  this.set('transform', new TransformComponent())
   const velocity = new Point()
   const weaponTimer = new Timer()
 

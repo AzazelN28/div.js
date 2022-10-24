@@ -1,3 +1,5 @@
+import Scalar from './Scalar'
+
 export default class Vector3 {
   static distanceBetween({ x: ax, y: ay, z: az }, { x: bx, y: by, z: bz }) {
     return Math.hypot(ax - bx, ay - by, az - bz)
@@ -22,6 +24,14 @@ export default class Vector3 {
    */
   get length() {
     return Math.hypot(this.x, this.y, this.z)
+  }
+
+  get isFinite() {
+    return Number.isFinite(this.x) && Number.isFinite(this.y) && Number.isFinite(this.z)
+  }
+
+  get isInteger() {
+    return Number.isInteger(this.x) && Number.isInteger(this.y) && Number.isInteger(this.z)
   }
 
   set(x, y, z) {
@@ -117,13 +127,49 @@ export default class Vector3 {
     return Math.hypot(this.x - x, this.y - y, this.z - z)
   }
 
+  equal({ x, y, z }) {
+    return Scalar.equal(this.x, x)
+        && Scalar.equal(this.y, y)
+        && Scalar.equal(this.z, z)
+  }
+
+  greater({ x, y, z }) {
+    return Scalar.greaterOrEqual(this.x, x)
+        && Scalar.greaterOrEqual(this.y, y)
+        && Scalar.greaterOrEqual(this.z, z)
+  }
+
+  less({ x, y, z }) {
+    return Scalar.less(this.x, x)
+        && Scalar.less(this.y, y)
+        && Scalar.less(this.z, z)
+  }
+
+  greaterOrEqual({ x, y, z }) {
+    return Scalar.greaterOrEqual(this.x, x)
+        && Scalar.greaterOrEqual(this.y, y)
+        && Scalar.greaterOrEqual(this.z, z)
+  }
+
+  lessOrEqual({ x, y, z }) {
+    return Scalar.lessOrEqual(this.x, x)
+        && Scalar.lessOrEqual(this.y, y)
+        && Scalar.lessOrEqual(this.z, z)
+  }
+
+  almostEqual({ x, y, z }, epsilon) {
+    return Scalar.almostEqual(this.x, x, epsilon)
+        && Scalar.almostEqual(this.y, y, epsilon)
+        && Scalar.almostEqual(this.z, z, epsilon)
+  }
+
   toFixed(fractionDigits = 0) {
-    return `${this.constructor.name}(${this.x.toFixed(
+    return `Vector3(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(
       fractionDigits
-    )}, ${this.y.toFixed(fractionDigits)})`
+    )})`
   }
 
   toString() {
-    return `${this.constructor.name}(${this.x}, ${this.y})`
+    return `Vector3(${this.x}, ${this.y})`
   }
 }

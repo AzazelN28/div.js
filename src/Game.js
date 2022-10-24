@@ -4,11 +4,11 @@ import Scheduler from './core/Scheduler'
 import FrameCounter from './core/FrameCounter'
 import Audio from './audio/Audio'
 import Viewport from './canvas/Viewport'
-import Renderer from './renderer/Renderer'
+import Renderer from './2d/systems/Renderer'
 import Input from './input/Input'
 import EntityProvider from './core/EntityProvider'
 import EntityPoolProvider from './core/EntityPoolProvider'
-import Collider from './core/Collider'
+import Collider from './2d/systems/Collider'
 
 export default class Game {
   /**
@@ -38,7 +38,6 @@ export default class Game {
   #audio
 
   constructor({ canvas, bindings = new Map(), audioContext = new AudioContext() }) {
-    const context = canvas.getContext('2d')
     this.#canvas = canvas
     this.#viewport = new Viewport({ canvas })
     this.#input = new Input({ target: canvas, bindings })
@@ -46,7 +45,7 @@ export default class Game {
     this.#resources = new Resources()
     this.#frameCounter = new FrameCounter()
     this.#collider = new Collider()
-    this.#renderer = new Renderer({ context })
+    this.#renderer = new Renderer({ canvas })
     this.#renderer.debug.push(() => `${this.#frameCounter.framesPerSecond}fps`)
     this.#loop = new Loop({
       pipeline: [
