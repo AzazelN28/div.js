@@ -1,12 +1,16 @@
 import './style.css'
-import Point from './math/Point'
 import ResizeMode from './canvas/ResizeMode'
 import Game from './Game'
-import Timer from './core/Timer'
-import Random from './math/Random'
-import Rect from './math/Rect'
-import CompositeOperation from './2d/systems/CompositeOperation'
-import TransformComponent from './2d/components/TransformComponent'
+import Vector2 from './math/Vector2'
+import Line from './math/Line'
+import Wall from './fps/level/Wall'
+import Sector from './fps/level/Sector'
+
+import TransformComponent from './fps/components/TransformComponent'
+import BodyComponent from './fps/components/BodyComponent'
+import { CollisionMode } from './fps/systems/Collider'
+import ViewComponent from './fps/components/ViewComponent'
+import FacetedSpriteComponent from './fps/components/FacetedSpriteComponent'
 
 const canvas = document.querySelector('canvas')
 const game = new Game({
@@ -14,280 +18,185 @@ const game = new Game({
   bindings: new Map([
     ['left', [['keyboard', ['ArrowLeft']]]],
     ['right', [['keyboard', ['ArrowRight']]]],
-    ['up', [['keyboard', ['ArrowUp']]]],
-    ['down', [['keyboard', ['ArrowDown']]]],
-    ['fire', [['keyboard', ['Space']]]],
+    ['strafeLeft', [['keyboard', ['KeyA']]]],
+    ['strafeRight', [['keyboard', ['KeyD']]]],
+    [
+      'forward',
+      [
+        ['keyboard', ['ArrowUp']],
+        ['keyboard', ['KeyW']]
+      ]
+    ],
+    [
+      'backward',
+      [
+        ['keyboard', ['ArrowDown']],
+        ['keyboard', ['KeyS']]
+      ]
+    ],
+    ['fire', [['keyboard', ['Space']]]]
   ])
 })
-game.start()
 
 window.game = game
 
-function * ProjectileExplosionBehaviour(game, x, y) {
-  this.set('transform', new TransformComponent())
-  const renderable = game.renderer.createSpritesheet({
-    source: game.resources.get('/assets/explosion-4x.png'),
-    width: 64,
-    height: 64,
-    totalFrames: 16
-  })
-
-  renderable.size.set(64, 64)
-  renderable.pivot.copy(renderable.size).scale(0.5)
-  renderable.compositeOperation = CompositeOperation.LIGHTER
-
-  this.set('renderable', renderable)
-
-  const transform = this.get('transform')
-  transform.position.set(x, y)
-
-  while (!renderable.animate()) {
-    renderable.opacity = 1.0 - renderable.progress
-    yield
-  }
-}
-
-function * ProjectileBehaviour(game, x, y) {
-  this.set('transform', new TransformComponent())
-  const collidable = game.collider.createRect({
-    rect: new Rect(new Point(-8, -18), new Point(16, 36))
-  })
-  this.set('collidable', collidable)
-
-  const renderable = game.renderer.createSprite({
-    source: game.resources.get('/assets/player-shot.png')
-  })
-  renderable.size.set(16, 36)
-  renderable.pivot.copy(renderable.size).scale(0.5)
-  this.set('renderable', renderable)
-
-  /*
-  const collidableRenderable = game.renderer.createRect({
-    stroke: '#0ff',
-    rect: collidable.rect
-  })
-  this.set('collidable-renderable', collidableRenderable)
-  */
-
-  const transform = this.get('transform')
-  transform.position.set(x, y)
-
-  let explode = false
-  while (transform.position.y > 0) {
-    const collisions = collidable.hasCollidedWith('enemy')
-    if (collisions.length) {
-      explode = true
-      break
-    }
-    transform.position.y -= 10
-    yield // frame;
-  }
-
-  this.delete('collidable')
-
-  if (explode) {
-    game.scheduler.create('projectile-explosion', game, transform.position.x, transform.position.y)
-  }
-
-  game.renderer.destroyComponent(renderable)
-}
-
-function * EnemyBehaviour(game) {
-  this.set('transform', new TransformComponent())
-  const collidable = game.collider.createRect({
-    rect: new Rect(new Point(-64, -64), new Point(128, 128))
-  })
-  this.set('collidable', collidable)
-
-  const renderable = game.renderer.createSpritesheet({
-    source: game.resources.get('/assets/enemy.png'),
-    width: 256,
-    height: 256,
-    totalFrames: 6
-  })
-  renderable.size.set(256, 256)
-  renderable.pivot.copy(renderable.size).scale(0.5)
-  this.set('renderable', renderable)
-
-  /*
-  const collidableRenderable = game.renderer.createRect({
-    stroke: '#f0f',
-    rect: collidable.rect
-  })
-  this.set('collidable-renderable', collidableRenderable)
-  */
-
-  let health = 10
-
-  const transform = this.get('transform')
-  transform.position.set(
-    Math.random() * game.viewport.width,
-    -128
-  )
-
-  while (transform.position.y < game.viewport.height + 128 && health > 0) {
-    const collisions = collidable.hasCollidedWith('projectile')
-    if (collisions) {
-      for (const entity of collisions) {
-        health--
-      }
-    }
-
-    // TODO: Las animaciones pueden ser "rangos" en los que tenemos
-    // un fotograma inicial y un fotograma inicial.
-    // Esta función podría llamarse `animatable.animate('idle')` y que
-    // cada "animación" tenga un nombre.
-    renderable.animate()
-    transform.position.y++
-    yield // frame;
-  }
-
-  if (health <= 0) {
-    // Aquí podríamos reproducir la animación
-    // de explosión.
-    for (let i = 0; i < 10; i++) {
-      transform.scale.x += 0.1
-      transform.scale.y += 0.1
-      renderable.opacity -= 0.1
-      yield // frame;
-    }
-
-    // Reproducimos el sonido de explosión.
-    game.audio.sound.play(game.resources.get('/assets/explosion.wav'), {
-      offset: 0.2,
-      playbackRate: Random.between(0.9, 1.1),
-      detune: Random.between(0.7, 1.3)
-    })
-  }
-
-  game.renderer.destroyComponent(renderable)
-}
-
-async function * LoaderBehaviour(game) {
-  this.set('transform', new TransformComponent())
-  const transform = this.get('transform')
-  transform.position.set(game.viewport.rect.centerX, game.viewport.rect.centerY)
-
-  const renderable = game.renderer.createSprite({
-    source: game.resources.get('/assets/loader.png')
-  })
-  this.set('renderable', renderable)
-  while (true) {
-    transform.rotation += 0.1
-    yield
-  }
-
-  game.renderer.destroyComponent(renderable)
-}
-
 async function * LevelBehaviour(game) {
-  this.set('transform', new TransformComponent())
-  game.setMode({ mode: ResizeMode.NONE, width: 1280, height: 800 })
+  await game.resources.load('/assets/texture/SLIME15.png')
+  await game.resources.load('/assets/texture/WALL30_4.png')
+  await game.resources.load('/assets/texture/M1_1.png')
+  await game.resources.load('/assets/texture/PLAYA1.png')
+  await game.resources.load('/assets/texture/PLAYA2A8.png')
+  await game.resources.load('/assets/texture/PLAYA3A7.png')
+  await game.resources.load('/assets/texture/PLAYA4A6.png')
+  await game.resources.load('/assets/texture/PLAYA5.png')
 
-  const timer = new Timer()
+  // Retro MSDOS style
+  // game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
+  game.setMode({ mode: ResizeMode.FILL, scale: 0.5 })
+  const first = new Sector()
+  const second = new Sector()
+  const third = new Sector()
+  game.level.vertices.push(
+    new Vector2(-64, -64),
+    new Vector2(64, -64),
+    new Vector2(64, 64),
+    new Vector2(-64, 64),
 
-  const renderable = game.renderer.createRect({
-    rect: game.viewport.rect,
-    fill: '#181425'
-  })
-  this.set('renderable', renderable)
+    new Vector2(64, -64),
+    new Vector2(192, -128),
+    new Vector2(192, 128),
+    new Vector2(64, 64),
 
-  await game.resources.load('/assets/loader.png')
+    new Vector2(192, -128),
+    new Vector2(320, -128),
+    new Vector2(320, 128),
+    new Vector2(192, 128),
+  )
+  game.level.walls.push(
+    new Wall({ line: new Line(game.level.vertices[0], game.level.vertices[1]), front: first }),
+    new Wall({ line: new Line(game.level.vertices[1], game.level.vertices[2]), front: first, back: second }),
+    new Wall({ line: new Line(game.level.vertices[2], game.level.vertices[3]), front: first }),
+    new Wall({ line: new Line(game.level.vertices[3], game.level.vertices[0]), front: first }),
 
-  const _loader = game.scheduler.create('loader', game)
+    new Wall({ line: new Line(game.level.vertices[4], game.level.vertices[5]), front: second }),
+    new Wall({ line: new Line(game.level.vertices[5], game.level.vertices[6]), front: second, back: third }),
+    new Wall({ line: new Line(game.level.vertices[6], game.level.vertices[7]), front: second }),
+    new Wall({ line: new Line(game.level.vertices[7], game.level.vertices[4]), front: second, back: first }),
 
-  // Aquí realizamos la carga de los recursos del juego.
-  await game.resources.load('/assets/shot.wav')
-  await game.resources.load('/assets/explosion.wav')
-  await game.resources.load('/assets/explosion-4x.png')
-  await game.resources.load('/assets/player.png')
-  await game.resources.load('/assets/enemy.png')
-  await game.resources.load('/assets/player-shot.png')
-  await game.resources.load('/assets/enemy-shot.png')
+    new Wall({ line: new Line(game.level.vertices[8], game.level.vertices[9]), front: third }),
+    new Wall({ line: new Line(game.level.vertices[9], game.level.vertices[10]), front: third }),
+    new Wall({ line: new Line(game.level.vertices[10], game.level.vertices[11]), front: third }),
+    new Wall({ line: new Line(game.level.vertices[11], game.level.vertices[8]), front: third, back: second }),
+  )
+  first.walls = [
+    game.level.walls[0],
+    game.level.walls[1],
+    game.level.walls[2],
+    game.level.walls[3]
+  ]
+  first.floor.height = 8
+  first.ceiling.height = 64
+  second.walls = [
+    game.level.walls[4],
+    game.level.walls[5],
+    game.level.walls[6],
+    game.level.walls[7]
+  ]
+  second.floor.height = 4
+  second.ceiling.height = 48
+  third.walls = [
+    game.level.walls[8],
+    game.level.walls[9],
+    game.level.walls[10],
+    game.level.walls[11]
+  ]
+  third.floor.height = 0
+  third.ceiling.height = 64
 
-  _loader.destroy()
+  game.level.walls[1].middle.texture = '/assets/texture/M1_1.png'
+  game.level.walls[5].middle.texture = '/assets/texture/M1_1.png'
+  game.level.walls[7].middle.texture = '/assets/texture/M1_1.png'
+  game.level.walls[11].middle.texture = '/assets/texture/M1_1.png'
 
-  const _player = game.scheduler.create('player', game)
-  game.renderer.debug.push(() => _player.get('transform').position.toFixed(2))
-  game.renderer.debug.push(() => game.scheduler.get('projectile').size)
-  game.renderer.debug.push(() => game.scheduler.get('projectile-explosion').size)
-  game.renderer.debug.push(() => game.scheduler.get('enemy').size)
-  game.renderer.debug.push(() => game.scheduler.get('player').size)
+  game.level.sectors.push(first, second, third)
+  game.level.compute()
+
+  game.scheduler.create('enemy', game)
+  game.scheduler.create('enemy', game, 64, 64)
+  game.scheduler.create('enemy', game, 128, 64)
+  game.scheduler.create('player', game)
 
   while (true) {
-    if (game.input.keyboard.isPressed('KeyP')) {
-      _player.suspend(true)
-    } else if (game.input.keyboard.isPressed('KeyR')) {
-      _player.resume(true)
-    }
-
-    if (timer.elapsed(2000)) {
-      game.scheduler.create('enemy', game)
-    }
     yield // frame;
   }
-
-  game.renderer.destroyComponent(renderable)
 }
 
-function * PlayerBehaviour (game) {
-  this.set('transform', new TransformComponent())
-  const velocity = new Point()
-  const weaponTimer = new Timer()
+function * EnemyBehaviour(game, x = 0, y = 0) {
+  const transform = game.registry.create(TransformComponent)
+  transform.position.x = x
+  transform.position.y = y
 
-  const transform = this.get('transform')
-  transform.position.set(game.viewport.rect.centerX, game.viewport.rect.centerY)
-
-  const renderable = game.renderer.createSpritesheet({
-    source: game.resources.get('/assets/player.png'),
-    width: 128,
-    height: 164,
-    totalFrames: 9
+  const body = game.registry.create(BodyComponent)
+  const renderable = game.registry.create(FacetedSpriteComponent, {
+    sources: [
+      game.resources.get('/assets/texture/PLAYA1.png'),
+      game.resources.get('/assets/texture/PLAYA2A8.png'),
+      game.resources.get('/assets/texture/PLAYA3A7.png'),
+      game.resources.get('/assets/texture/PLAYA4A6.png'),
+      game.resources.get('/assets/texture/PLAYA5.png'),
+      game.resources.get('/assets/texture/PLAYA4A6.png'),
+      game.resources.get('/assets/texture/PLAYA3A7.png'),
+      game.resources.get('/assets/texture/PLAYA2A8.png')
+    ]
   })
-
-  renderable.size.set(128, 164)
-  renderable.pivot.copy(renderable.size).scale(0.5)
-
+  this.set('transform', transform)
+  this.set('body', body)
   this.set('renderable', renderable)
-  while (true) {
+
+  body.velocity.x = 1
+  while (true)
+  {
+    yield // frame;
+  }
+}
+
+function * PlayerBehaviour(game) {
+  const transform = game.registry.create(TransformComponent)
+  this.set('transform', transform)
+  const body = game.registry.create(BodyComponent)
+  body.collisionMode = CollisionMode.SLIDE
+  this.set('view', game.registry.create(ViewComponent))
+  this.set('body', body)
+
+  while (true)
+  {
     if (game.input.stateOf('left')) {
-      velocity.x--
+      transform.rotation -= 0.1
     } else if (game.input.stateOf('right')) {
-      velocity.x++
+      transform.rotation += 0.1
     }
-
-    if (game.input.stateOf('up')) {
-      velocity.y--
-    } else if (game.input.stateOf('down')) {
-      velocity.y++
+    if (game.input.stateOf('strafeLeft')) {
+      body.velocity.x += transform.direction.y * 0.1
+      body.velocity.y -= transform.direction.x * 0.1
+    } else if (game.input.stateOf('strafeRight')) {
+      body.velocity.x -= transform.direction.y * 0.1
+      body.velocity.y += transform.direction.x * 0.1
     }
-
-    if (game.input.stateOf('fire')) {
-      if (weaponTimer.elapsed(100)) {
-        game.audio.sound.play(game.resources.get('/assets/shot.wav'), {
-          playbackRate: Random.between(0.9, 1.1) ,
-          detune: Random.between(0.9, 1.1)
-        })
-        game.scheduler.create('projectile', game, transform.position.x, transform.position.y - 32)
-      }
+    if (game.input.stateOf('forward')) {
+      body.velocity.x += transform.direction.x * 0.1
+      body.velocity.y += transform.direction.y * 0.1
+    } else if (game.input.stateOf('backward')) {
+      body.velocity.x -= transform.direction.x * 0.1
+      body.velocity.y -= transform.direction.y * 0.1
     }
-    renderable.animate()
-
-    transform.position.add(velocity)
-    transform.position.constrainTo(game.viewport.rect)
-
-    velocity.scale(0.9)
     yield // frame;
   }
-
-  game.renderer.destroyComponent(renderable)
 }
 
-game.scheduler.register('loader', LoaderBehaviour)
-game.scheduler.register('enemy', EnemyBehaviour)
 game.scheduler.register('level', LevelBehaviour)
-game.scheduler.register('projectile', ProjectileBehaviour)
-game.scheduler.register('projectile-explosion', ProjectileExplosionBehaviour)
+game.scheduler.register('enemy', EnemyBehaviour)
 game.scheduler.register('player', PlayerBehaviour)
 
 game.scheduler.create('level', game)
+
+game.start()

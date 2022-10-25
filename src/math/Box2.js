@@ -6,6 +6,10 @@ export default class Box2 {
     this.size = size
   }
 
+  get aspectRatio() {
+    return this.width / this.height
+  }
+
   get x() {
     return this.position.x
   }
@@ -50,40 +54,80 @@ export default class Box2 {
     return this.x
   }
 
+  set left(value) {
+    this.x = value
+  }
+
   get top() {
     return this.y
+  }
+
+  set top(value) {
+    this.y = value
   }
 
   get right() {
     return this.x + this.width
   }
 
+  set right(value) {
+    this.width = value - this.x
+  }
+
   get bottom() {
     return this.y + this.height
+  }
+
+  set bottom(value) {
+    this.height = value - this.y
   }
 
   get minX() {
     return this.left
   }
 
+  set minX(value) {
+    this.left = value
+  }
+
   get minY() {
     return this.top
+  }
+
+  set minY(value) {
+    this.top = value
   }
 
   get maxX() {
     return this.right
   }
 
+  set maxX(value) {
+    this.right = value
+  }
+
   get maxY() {
     return this.bottom
+  }
+
+  set maxY(value) {
+    this.bottom = value
   }
 
   get centerX() {
     return this.x + this.halfWidth
   }
 
+  set centerX(value) {
+    this.x = value - this.halfWidth
+  }
+
   get centerY() {
     return this.y + this.halfHeight
+  }
+
+  set centerY(value) {
+    this.y = value - this.halfHeight
   }
 
   set(x, y, width, height) {
@@ -102,6 +146,30 @@ export default class Box2 {
 
   clone() {
     return new Box2(this.position.clone(), this.size.clone())
+  }
+
+  envelopStart() {
+    this.minX = Infinity
+    this.minY = Infinity
+    this.maxX = -Infinity
+    this.maxY = -Infinity
+    return this
+  }
+
+  envelop(point) {
+    if (this.contains(point)) {
+      return
+    }
+    if (point.x < this.minX) {
+      this.minX = point.x
+    } else if (point.x > this.maxX) {
+      this.maxX = point.x
+    }
+    if (point.y < this.minY) {
+      this.minY = point.y
+    } else if (point.y > this.maxY) {
+      this.maxY = point.y
+    }
   }
 
   contains({ x, y }) {

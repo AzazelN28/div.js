@@ -1,4 +1,5 @@
 import Scalar from './Scalar'
+import Interpolation from './Interpolation'
 
 export default class Vector2 {
   static distanceBetween({ x: ax, y: ay }, { x: bx, y: by }) {
@@ -64,8 +65,19 @@ export default class Vector2 {
     return new Vector2(this.x, this.y)
   }
 
+  polar(angle, length = 1) {
+    return this.set(
+      Math.cos(angle) * length,
+      Math.sin(angle) * length
+    )
+  }
+
   add({ x, y }) {
     return this.set(this.x + x, this.y + y)
+  }
+
+  addScale({ x, y }, s) {
+    return this.set(this.x + x * s, this.y + y * s)
   }
 
   subtract({ x, y }) {
@@ -153,40 +165,62 @@ export default class Vector2 {
     return this
   }
 
+  linear(x, { x: ax, y: ay }, { x: bx, y: by }) {
+    return this.set(
+      Interpolation.linear(x, ax, bx),
+      Interpolation.linear(x, ay, by)
+    )
+  }
+
+  quadratic(x, { x: ax, y: ay }, { x: bx, y: by }, { x: cx, y: cy }) {
+    return this.set(
+      Interpolation.quadratic(x, ax, bx, cx),
+      Interpolation.quadratic(x, ay, by, cy)
+    )
+  }
+
+  cubic(x, { x: ax, y: ay }, { x: bx, y: by }, { x: cx, y: cy }, { x: dx, y: dy }) {
+    return this.set(
+      Interpolation.cubic(x, ax, bx, cx, dx),
+      Interpolation.cubic(x, ay, by, cy, dy)
+    )
+  }
+
   equal({ x, y }) {
-    return Scalar.equal(this.x, x)
-        && Scalar.equal(this.y, y)
+    return Scalar.equal(this.x, x) && Scalar.equal(this.y, y)
   }
 
   greater({ x, y }) {
-    return Scalar.greaterOrEqual(this.x, x)
-        && Scalar.greaterOrEqual(this.y, y)
+    return Scalar.greaterOrEqual(this.x, x) && Scalar.greaterOrEqual(this.y, y)
   }
 
   less({ x, y }) {
-    return Scalar.less(this.x, x)
-        && Scalar.less(this.y, y)
+    return Scalar.less(this.x, x) && Scalar.less(this.y, y)
   }
 
   greaterOrEqual({ x, y }) {
-    return Scalar.greaterOrEqual(this.x, x)
-        && Scalar.greaterOrEqual(this.y, y)
+    return Scalar.greaterOrEqual(this.x, x) && Scalar.greaterOrEqual(this.y, y)
   }
 
   lessOrEqual({ x, y }) {
-    return Scalar.lessOrEqual(this.x, x)
-        && Scalar.lessOrEqual(this.y, y)
+    return Scalar.lessOrEqual(this.x, x) && Scalar.lessOrEqual(this.y, y)
   }
 
   almostEqual({ x, y }, epsilon) {
-    return Scalar.almostEqual(this.x, x, epsilon)
-        && Scalar.almostEqual(this.y, y, epsilon)
+    return (
+      Scalar.almostEqual(this.x, x, epsilon) &&
+      Scalar.almostEqual(this.y, y, epsilon)
+    )
+  }
+
+  almostZero() {
+    return this.almostEqual({ x: 0, y: 0 })
   }
 
   toFixed(fractionDigits = 0) {
-    return `Vector2(${this.x.toFixed(
+    return `Vector2(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(
       fractionDigits
-    )}, ${this.y.toFixed(fractionDigits)})`
+    )})`
   }
 
   toString() {

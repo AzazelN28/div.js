@@ -1,3 +1,5 @@
+import BodyComponent from '../components/BodyComponent'
+
 export const CollisionMode = {
   DIE: 'die',
   SLIDE: 'slide',
@@ -6,11 +8,11 @@ export const CollisionMode = {
 
 export default class LevelCollider {
   #level
-  #components
+  #registry
 
-  constructor(level) {
+  constructor({ level, registry }) {
     this.#level = level
-    this.#components = new Set()
+    this.#registry = registry
   }
 
   update()
@@ -19,9 +21,10 @@ export default class LevelCollider {
     // entorno con las entidades.
     let test = false
     // for (const entity of state.entities) {
-    for (const body of this.#components) {
+    for (const body of this.#registry.get(BodyComponent)) {
       const transform = body.entity.get('transform')
       transform.position.add(body.velocity)
+      transform.direction.polar(transform.rotation)
 
       // TODO: Aquí deberíamos comprobar si las entidades colisionan con otras entidades.
       // Esto quizá podríamos meterlo en una función llamada algo como
@@ -62,26 +65,37 @@ export default class LevelCollider {
       }
 
       const sector = body.sector
-      if (transform.position[2] > sector.floor.height) {
-        body.velocity[2] -= body.gravity ?? 0
+      if (sector === null) {
+        continue
+      }
+
+      if (transform.position.z > sector.floor.height) {
+        body.velocity.z -= body.gravity ?? 0
         body.onFloor = false
       } else {
-        transform.position[2] = sector.floor.height
-        body.velocity[2] = 0
+        transform.position.z = sector.floor.height
+        body.velocity.z = 0
         body.onFloor = true
       }
 
-      if (transform.position[2] > sector.ceiling.height - body.height) {
-        transform.position[2] = sector.ceiling.height - body.height
-        body.velocity[2] = 0
+      if (transform.position.z > sector.ceiling.height - body.height) {
+        transform.position.z = sector.ceiling.height - body.height
+        body.velocity.z = 0
       }
 
       for (const wall of sector.walls) {
         // Distancia a la línea y el centro de la entidad.
-        const ld = wall.distance(transform.position)
+        const ld = wall.line.distance(transform.position)
+
+        // ¡NOTA! Esto puede servir para debuggear la distancia
+        // a las entidades que pueden colisionar con las paredes.
+        // wall.d = ld
 
         // Distancia entra la línea y el radio de la entidad.
         const lpd = ld - body.radius
+        // Si la distancia es mayor que 0, significa
+        // que no estamos colisionando con esa pared de
+        // ninguna forma.
         if (lpd > 0) {
           continue
         }
@@ -95,48 +109,52 @@ export default class LevelCollider {
         if (wall.isDoubleSided && wall.isWalkable) {
           const nextSector = wall.back
           if (
-            nextSector.floor.height - transform.position[2] <=
+            nextSector.floor.height - transform.position.z <=
             (body.stepSize ?? 0)
           ) {
-            body.sector = wall.sectors[1]
-            if (nextSector.floor.height - transform.position[2] > 0) {
-              transform.position[2] = nextSector.floor.height
+            body.sector = wall.back
+            if (nextSector.floor.height - transform.position.z > 0) {
+              transform.position.z = nextSector.floor.height
             }
             continue
           }
         }
 
         // Si la posición del objeto está FUERA del segmento.
-        if (!wall.projected(transform.position)) {
+        if (!wall.line.projected(transform.position)) {
           continue
         }
 
         // Dependiendo del tipo de "comportamiento" de colisión
         // reaccionamos de una forma o de otra.
-        if (body.collision === CollisionMode.DIE) {
-          entity.state = EntityState.DEAD
+        if (body.collisionMode === CollisionMode.DIE) {
+          // entity.state = EntityState.DEAD
+          // TODO: Quizá deberíamos mandar un "kill" a la entidad.
           break
-        } else if (body.collision === CollisionMode.SLIDE) {
-          transform.position.addScale(wall.normal, -lpd)
+        } else if (body.collisionMode === CollisionMode.SLIDE) {
+          transform.position.addScale(wall.normal, lpd)
           // FIXME: Esto arregla la "expulsión" del jugador fuera de los sectores pero
           // es una puta mierda.
-          body.velocity.add(wall.normal)
-        } else if (body.collision === CollisionMode.BOUNCE) {
-          transform.position.addScale(wall.normal, -lpd)
+          body.velocity.addScale(wall.normal, lpd)
+        } else if (body.collisionMode === CollisionMode.BOUNCE) {
+          transform.position.addScale(wall.normal, lpd)
           body.velocity.negate()
+          // body.velocity.add(wall.normal) // <- esto es casi mejor
         }
       }
 
       // Comprueba que la entidad se haya detenido.
       if (
-        body.collision === CollisionMode.SLIDE ||
-        body.collision === CollisionMode.BOUNCE
+        body.collisionMode === CollisionMode.SLIDE ||
+        body.collisionMode === CollisionMode.BOUNCE
       ) {
         // TODO: Esto debería ser algo así como "muere cuando te pares" pero
         // quizá debería estar en otro lugar.
         if (body.dieOnStop) {
           if (body.velocity.almostZero()) {
-            entity.kill()
+            // TODO: Quizá deberíamos mandar un "kill" a la
+            // entidad.
+            // entity.kill()
           }
         }
       }

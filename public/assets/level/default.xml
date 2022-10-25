@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<level>
+  <meta>
+    <title>Default</title>
+    <description>Default level</description>
+  </meta>
+  <resources>
+    <resource type="image" id="background" path="background.png" />
+  </resources>
+  <geometry>
+    <vertices>
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+      <vertex x="" y="" />
+    </vertices>
+    <walls>
+      <wall start="0" end="1" />
+    </walls>
+    <sectors>
+
+    </sectors>
+  </geometry>
+</level>

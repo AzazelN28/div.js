@@ -1,4 +1,25 @@
 export default class Level {
+  /**
+   * Vértices del nivel.
+   *
+   * @type {Array<Vertex>}
+   */
+  #vertices
+
+  /**
+   * Sectores del nivel.
+   *
+   * @type {Array<Sector>}
+   */
+  #sectors
+
+  /**
+   * Paredes del nivel.
+   *
+   * @type {Array<Wall>}
+   */
+  #walls
+
   constructor() {
     this.#vertices = []
     this.#sectors = []
@@ -17,6 +38,11 @@ export default class Level {
     return this.#sectors
   }
 
+  compute() {
+    this.#walls.forEach((wall) => wall.compute())
+    this.#sectors.forEach((sector) => sector.compute())
+  }
+
   /**
    * Devuelve el sector en el que se encuentra el punto. Esta función
    * sólo comprueba las coordenadas 2D del sector. Quizá se podría hacer
@@ -29,8 +55,7 @@ export default class Level {
   getSectorAt(point) {
     const maybeIn = []
     for (const sector of this.#sectors) {
-      if (sector.boundingBox.contains(x, y))
-      {
+      if (sector.boundingBox.contains(point)) {
         maybeIn.push(sector)
       }
     }
@@ -42,7 +67,7 @@ export default class Level {
     for (const sector of maybeIn) {
       let isInside = true
       for (const wall of sector.walls) {
-        if (wall.side(point) < 0) {
+        if (wall.line.side(point) < 0) {
           isInside = false
           break
         }

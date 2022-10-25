@@ -23,5 +23,6 @@ canvas {
   height: 100%;
   width: auto;
   aspect-ratio: 16 / 10;
+  image-rendering: pixelated;
 }
 

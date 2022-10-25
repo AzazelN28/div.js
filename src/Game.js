@@ -4,11 +4,15 @@ import Scheduler from './core/Scheduler'
 import FrameCounter from './core/FrameCounter'
 import Audio from './audio/Audio'
 import Viewport from './canvas/Viewport'
-import Renderer from './2d/systems/Renderer'
 import Input from './input/Input'
 import EntityProvider from './core/EntityProvider'
 import EntityPoolProvider from './core/EntityPoolProvider'
-import Collider from './2d/systems/Collider'
+import EntityComponentRegistry from './core/EntityComponentRegistry'
+// import Renderer from './fps/systems/RendererDebug'
+import Renderer from './fps/systems/Renderer'
+import Collider from './fps/systems/Collider'
+import Level from './fps/level/Level'
+import Visibility from './fps/systems/Visibility'
 
 export default class Game {
   /**
@@ -21,6 +25,7 @@ export default class Game {
    */
   #loop
   #scheduler
+  #registry
   #resources
   #collider
 
@@ -37,15 +42,33 @@ export default class Game {
    */
   #audio
 
-  constructor({ canvas, bindings = new Map(), audioContext = new AudioContext() }) {
+  #visibility
+  #level
+
+  constructor({
+    canvas,
+    bindings = new Map(),
+    audioContext = new AudioContext()
+  }) {
+    this.#level = new Level()
     this.#canvas = canvas
     this.#viewport = new Viewport({ canvas })
     this.#input = new Input({ target: canvas, bindings })
+    this.#registry = new EntityComponentRegistry()
     this.#scheduler = new Scheduler(new EntityPoolProvider())
     this.#resources = new Resources()
     this.#frameCounter = new FrameCounter()
-    this.#collider = new Collider()
-    this.#renderer = new Renderer({ canvas })
+    this.#collider = new Collider({
+      level: this.#level,
+      registry: this.#registry
+    })
+    this.#renderer = new Renderer({
+      canvas,
+      level: this.#level,
+      registry: this.#registry,
+      resources: this.#resources
+    })
+    this.#visibility = new Visibility({ registry: this.#registry })
     this.#renderer.debug.push(() => `${this.#frameCounter.framesPerSecond}fps`)
     this.#loop = new Loop({
       pipeline: [
@@ -54,6 +77,7 @@ export default class Game {
         () => this.#input.update(),
         () => this.#collider.update(),
         () => this.#scheduler.update(),
+        () => this.#visibility.update(),
         (time) => this.#renderer.render(time),
         (time) => this.#renderer.renderDebug(time)
       ]
@@ -81,6 +105,10 @@ export default class Game {
     return this.#scheduler
   }
 
+  get registry() {
+    return this.#registry
+  }
+
   get resources() {
     return this.#resources
   }
@@ -95,6 +123,10 @@ export default class Game {
 
   get renderer() {
     return this.#renderer
+  }
+
+  get level() {
+    return this.#level
   }
 
   setMode({ mode, width = undefined, height = undefined, scale = undefined }) {

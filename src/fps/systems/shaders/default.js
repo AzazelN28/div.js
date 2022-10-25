@@ -1,5 +1,5 @@
 export default {
-vertex: `
+  vertex: `
   precision highp float;
 
   attribute vec3 a_coords;
@@ -18,7 +18,7 @@ vertex: `
     v_projected = gl_Position;
   }
   `,
-fragment: `
+  fragment: `
   precision highp float;
 
   varying vec2 v_uv;
@@ -41,10 +41,11 @@ fragment: `
       uv.y = 1.0 - v_uv.y;
     }
     vec4 texture = texture2D(u_sampler, uv);
-    vec4 color = vec4(u_color, 0.0);
-    vec4 final = mix(texture, vec4(0.0, 0.0, 0.0, texture.a), fog(v_projected.z, 1.0, 1000.0)) + color;
-
+    // vec4 color = vec4(u_color, 1.0);
+    // vec4 final = mix(texture, vec4(0.0, 0.0, 0.0, texture.a), fog(v_projected.z, 1.0, 1000.0)) + color;
+    vec4 final = mix(texture, vec4(0.0, 0.0, 0.0, texture.a), fog(v_projected.z, 1.0, 1000.0));
     gl_FragColor = final;
+    // gl_FragColor = color;
   }
   `
 }

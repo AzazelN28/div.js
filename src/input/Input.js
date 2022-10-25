@@ -62,7 +62,7 @@ export default class Input {
           continue
 
         const currentValue = device.stateOf(path)
-        value = Math.max(Math.abs(value), Math.abs(currentValue)) * Math.sign(currentValue)
+        value = Math.max(Math.abs(value), Math.abs(currentValue)) * (Math.sign(currentValue) || 1)
       }
       this.#state.set(action, value)
     }

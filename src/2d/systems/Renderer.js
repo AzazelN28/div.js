@@ -7,13 +7,12 @@ import RenderableText from '../components/RenderableText'
 export default class Renderer {
   #canvas = null
   #context = null
-  #components = new Set()
   #debug = new Array()
 
-  constructor({ canvas }) {
+  constructor({ canvas, registry }) {
     this.#canvas = canvas
     this.#context = canvas.getContext('2d')
-    this.#components = new Set()
+    this.#registry = registry
     this.#debug = new Array()
   }
 
@@ -30,15 +29,11 @@ export default class Renderer {
   }
 
   createComponent(constructor, ...args) {
-    const component = new constructor(...args)
-    component.renderer = this
-    this.#components.add(component)
-    return component
+    return this.#registry.create(constructor, ...args)
   }
 
   destroyComponent(component) {
-    component.entity = null
-    return this.#components.delete(component)
+    return this.#registry.destroy(component)
   }
 
   createText(...args) {
@@ -65,7 +60,7 @@ export default class Renderer {
 
   render(time) {
     this.#context.clearRect(0, 0, this.#context.canvas.width, this.#context.canvas.height)
-    for (const component of this.#components) {
+    for (const component of this.#registry.anyOf(RenderableText, RenderableSpritesheet, RenderableSprite, RenderableScroll, RenderableRect)) {
       if (!component.entity) {
         continue
       }

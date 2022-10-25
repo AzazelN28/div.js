@@ -1,0 +1,535 @@
+{
+  "meta": {
+    "title": "Hello, World!",
+    "description": "Lorem ipsum dolor sit amet"
+  },
+  "assets": [
+    {
+      "id": "ub001",
+      "type": "audio",
+      "url": "assets/ambient/UB03-005 1.mp3"
+    }, {
+      "id": "ub002",
+      "type": "audio",
+      "url": "assets/ambient/UB03-005 2.mp3"
+    }, {
+      "id": "ub003",
+      "type": "audio",
+      "url": "assets/ambient/UB03-005 3.mp3"
+    }, {
+      "id": "ub004",
+      "type": "audio",
+      "url": "assets/ambient/UB03-005 4.mp3"
+    }, {
+      "id": "ub005",
+      "type": "audio",
+      "url": "assets/ambient/UB03-005 5.mp3"
+    }, {
+      "id": "shot",
+      "type": "audio",
+      "url": "assets/sfx/shot.wav"
+    }, {
+      "id": "m1_1",
+      "type": "bitmap",
+      "url": "assets/texture/M1_1.png"
+    }, {
+      "id": "wall02_1",
+      "type": "bitmap",
+      "url": "assets/texture/WALL02_1.png"
+    }, {
+      "id": "wall02_2",
+      "type": "bitmap",
+      "url": "assets/texture/WALL02_2.png"
+    }, {
+      "id": "wall52_2",
+      "type": "bitmap",
+      "url": "assets/texture/WALL52_2.png"
+    }, {
+      "id": "slime14",
+      "type": "bitmap",
+      "url": "assets/texture/SLIME14.png"
+    }, {
+      "id": "slime15",
+      "type": "bitmap",
+      "url": "assets/texture/SLIME15.png"
+    }, {
+      "id": "slime16",
+      "type": "bitmap",
+      "url": "assets/texture/SLIME16.png"
+    }, {
+      "id": "playa1",
+      "type": "bitmap",
+      "url": "assets/texture/PLAYA1.png"
+    }, {
+      "id": "playa2a8",
+      "type": "bitmap",
+      "url": "assets/texture/PLAYA2A8.png"
+    }, {
+      "id": "playa3a7",
+      "type": "bitmap",
+      "url": "assets/texture/PLAYA3A7.png"
+    }, {
+      "id": "playa4a6",
+      "type": "bitmap",
+      "url": "assets/texture/PLAYA4A6.png"
+    }, {
+      "id": "playa5",
+      "type": "bitmap",
+      "url": "assets/texture/PLAYA5.png"
+    }
+  ],
+  "entities": [
+    {
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": 0
+      },
+      "emitter": {
+        "buffer": "ub001"
+      },
+      "type": "Enemy"
+    },
+    {
+      "transform": {
+        "position": [-512, -128, 0],
+        "rotation": 0
+      },
+      "renderable": {
+        "width": 16,
+        "height": 28,
+        "pivot": 28,
+        "flipped": true,
+        "xgraph": [
+          "playa1",
+          "playa2a8",
+          "playa3a7",
+          "playa4a6",
+          "playa5",
+          "playa4a6",
+          "playa3a7",
+          "playa2a8"
+        ]
+      },
+      "emitter": {
+        "buffer": "ub002"
+      },
+      "type": "Enemy"
+    },
+    {
+      "transform": {
+        "position": [-380, -400, -64],
+        "rotation": 0
+      },
+      "renderable": {
+        "width": 32,
+        "height": 32,
+        "pivot": 64
+      },
+      "emitter": {
+        "buffer": "ub003"
+      },
+      "type": "Enemy"
+    }
+  ],
+  "effectors": [],
+  "geometry": {
+    "vertices": [
+      [
+        -64,
+        -64
+      ],
+      [
+        64,
+        -64
+      ],
+      [
+        64,
+        64
+      ],
+      [
+        -64,
+        64
+      ],
+      [
+        -196,
+        -128
+      ],
+      [
+        -196,
+        128
+      ],
+      [
+        -640,
+        -128
+      ],
+      [
+        -512,
+        128
+      ],
+      [
+        -512,
+        -320
+      ],
+      [
+        -256,
+        -320
+      ],
+      [
+        -512,
+        -480
+      ],
+      [
+        -256,
+        -480
+      ]
+    ],
+    "walls": [{
+        "vertices": [
+          0,
+          1
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          0
+        ]
+      },
+      {
+        "vertices": [
+          1,
+          2
+        ],
+        "textures": [
+          "wall02_2"
+        ],
+        "sectors": [
+          0
+        ]
+      },
+      {
+        "vertices": [
+          2,
+          3
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          0
+        ]
+      },
+      {
+        "vertices": [
+          3,
+          0
+        ],
+        "textures": [
+          "wall02_1",
+          "m1_1",
+          "wall02_2"
+        ],
+        "sectors": [
+          0,
+          1
+        ]
+      },
+      {
+        "vertices": [
+          0,
+          3
+        ],
+        "textures": [
+          "wall02_1",
+          "m1_1",
+          "wall02_2"
+        ],
+        "sectors": [
+          1,
+          0
+        ]
+      },
+      {
+        "vertices": [
+          3,
+          5
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          1
+        ]
+      },
+      {
+        "vertices": [
+          5,
+          4
+        ],
+        "textures": [
+          "wall02_1",
+          null,
+          "wall02_2"
+        ],
+        "sectors": [
+          1,
+          2
+        ]
+      },
+      {
+        "vertices": [
+          4,
+          0
+        ],
+        "textures": [
+          "wall02_2"
+        ],
+        "sectors": [
+          1
+        ]
+      },
+      {
+        "vertices": [
+          4,
+          5
+        ],
+        "textures": [
+          "wall02_1",
+          null,
+          "wall02_2"
+        ],
+        "sectors": [
+          2,
+          1
+        ]
+      },
+      {
+        "vertices": [
+          5,
+          7
+        ],
+        "textures": [
+          "wall52_2"
+        ],
+        "sectors": [
+          2
+        ]
+      },
+      {
+        "vertices": [
+          7,
+          6
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          2
+        ]
+      },
+      {
+        "vertices": [
+          6,
+          4
+        ],
+        "textures": [
+          "wall02_1",
+          null,
+          "wall02_2"
+        ],
+        "sectors": [
+          2,
+          3
+        ]
+      },
+      {
+        "vertices": [
+          4,
+          6
+        ],
+        "sectors": [
+          3,
+          2
+        ]
+      },
+      {
+        "vertices": [
+          6,
+          8
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          3
+        ]
+      },
+      {
+        "vertices": [
+          8,
+          9
+        ],
+        "textures": [
+          "wall02_1",
+          "m1_1",
+          "wall02_2"
+        ],
+        "walkable": true,
+        "sectors": [
+          3,
+          4
+        ]
+      },
+      {
+        "vertices": [
+          9,
+          4
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          3
+        ]
+      },
+      {
+        "vertices": [
+          9,
+          8
+        ],
+        "textures": [
+          "wall02_1",
+          "m1_1",
+          "wall02_2"
+        ],
+        "walkable": true,
+        "sectors": [
+          4,
+          3
+        ]
+      },
+      {
+        "vertices": [
+          8,
+          10
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          4
+        ]
+      },
+      {
+        "vertices": [
+          10,
+          11
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          4
+        ]
+      },
+      {
+        "vertices": [
+          11,
+          9
+        ],
+        "textures": [
+          "wall02_1"
+        ],
+        "sectors": [
+          4
+        ]
+      }
+    ],
+    "sectors": [{
+        "walls": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "planes": [{
+            "texture": "slime15",
+            "height": -64
+          },
+          {
+            "texture": "slime15",
+            "height": 64
+          }
+        ]
+      },
+      {
+        "walls": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "planes": [{
+            "texture": "slime16",
+            "height": -56
+          },
+          {
+            "texture": "slime16",
+            "height": 56
+          }
+        ]
+      },
+      {
+        "walls": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "planes": [{
+            "texture": "slime14",
+            "height": -48
+          },
+          {
+            "texture": "slime14",
+            "height": 48
+          }
+        ]
+      },
+      {
+        "walls": [
+          12,
+          13,
+          14,
+          15
+        ],
+        "planes": [{
+            "texture": "slime15",
+            "height": -40
+          },
+          {
+            "texture": "slime15",
+            "height": 40
+          }
+        ]
+      },
+      {
+        "walls": [
+          16,
+          17,
+          18,
+          19
+        ],
+        "planes": [{
+            "texture": "slime16",
+            "height": -64
+          },
+          {
+            "texture": "slime16",
+            "height": 128
+          }
+        ]
+      }
+    ]
+  }
+}

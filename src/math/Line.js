@@ -33,16 +33,16 @@ export default class Line {
   }
 
   get dx() {
-    return this.sx - this.ex
+    return this.ex - this.sx
   }
 
   get dy() {
-    return this.sy - this.ey
+    return this.ey - this.sy
   }
 
   side({ x, y }) {
-    const { sx, sy, ex, ey } = this
-    return (ex - sx) * (y - sy) - (ey - sy) * (x - sx)
+    const { sx, sy, dx, dy } = this
+    return dx * (y - sy) - dy * (x - sx)
   }
 
   distance({ x, y }) {
@@ -59,8 +59,8 @@ export default class Line {
     return param
   }
 
-  projected({ x, y }, { min = -0.25, max = 1.25 } = {}) {
-    const param = this.projection({ x, y })
+  projected(point, { min = -0.25, max = 1.25 } = {}) {
+    const param = this.projection(point)
     return param >= min && param <= max
   }
 
@@ -71,7 +71,7 @@ export default class Line {
 
   intersection(a, b, out = new Vector2()) {
     const denom = this.denominator(a, b)
-    if (Scalar.areAlmostEqual(denom, 0)) {
+    if (Scalar.almostEqual(denom, 0)) {
       return out.set(Infinity, Infinity)
     }
 
