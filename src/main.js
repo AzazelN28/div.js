@@ -417,7 +417,7 @@ function * WeaponBehaviour(game) {
       transform.position.x = 160
       transform.position.y = 240
     }
-    if (timer.elapsed(200) && this.bullshit === true) {
+    if (timer.elapsed(100) && this.bullshit === true) {
       animationIndex = (animationIndex + 1) % animation.length
       if (animationIndex === 0) {
         this.bullshit = false

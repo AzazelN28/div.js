@@ -113,17 +113,36 @@ export default class Spatial {
       if (!listener.entity) continue
 
       const transform = listener.entity.get('transform')
-      this.#audioContext.listener.positionX.value = transform.position.x
-      this.#audioContext.listener.positionY.value = transform.position.y
-      this.#audioContext.listener.positionZ.value = transform.position.z
+      if (this.#audioContext.listener.setPosition) {
+        this.#audioContext.listener.setPosition(
+          transform.position.x,
+          transform.position.y,
+          transform.position.z
+        )
+      } else {
+        this.#audioContext.listener.positionX.value = transform.position.x
+        this.#audioContext.listener.positionY.value = transform.position.y
+        this.#audioContext.listener.positionZ.value = transform.position.z
+      }
 
-      this.#audioContext.listener.forwardX.value = -transform.direction.x
-      this.#audioContext.listener.forwardY.value = -transform.direction.y
-      this.#audioContext.listener.forwardZ.value = 0
+      if (this.#audioContext.listener.setOrientation) {
+        this.#audioContext.listener.setOrientation(
+          -transform.direction.x,
+          -transform.direction.y,
+          0,
+          0,
+          0,
+          1
+        )
+      } else {
+        this.#audioContext.listener.forwardX.value = -transform.direction.x
+        this.#audioContext.listener.forwardY.value = -transform.direction.y
+        this.#audioContext.listener.forwardZ.value = 0
 
-      this.#audioContext.listener.upX.value = 0
-      this.#audioContext.listener.upY.value = 0
-      this.#audioContext.listener.upZ.value = 1
+        this.#audioContext.listener.upX.value = 0
+        this.#audioContext.listener.upY.value = 0
+        this.#audioContext.listener.upZ.value = 1
+      }
     }
   }
 }
