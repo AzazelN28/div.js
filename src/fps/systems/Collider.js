@@ -1,7 +1,7 @@
 import BodyComponent from '../components/BodyComponent'
 
 export const CollisionMode = {
-  DIE: 'die',
+  STOP: 'stop',
   SLIDE: 'slide',
   BOUNCE: 'bounce'
 }
@@ -22,6 +22,9 @@ export default class LevelCollider {
     let test = false
     // for (const entity of state.entities) {
     for (const body of this.#registry.get(BodyComponent)) {
+      if (!body.entity)
+        continue
+
       const transform = body.entity.get('transform')
       transform.position.add(body.velocity)
       transform.direction.polar(transform.rotation)
@@ -71,11 +74,11 @@ export default class LevelCollider {
 
       if (transform.position.z > sector.floor.height) {
         body.velocity.z -= body.gravity ?? 0
-        body.onFloor = false
+        body.isOnGround = false
       } else {
         transform.position.z = sector.floor.height
         body.velocity.z = 0
-        body.onFloor = true
+        body.isOnGround = true
       }
 
       if (transform.position.z > sector.ceiling.height - body.height) {
@@ -127,15 +130,17 @@ export default class LevelCollider {
 
         // Dependiendo del tipo de "comportamiento" de colisión
         // reaccionamos de una forma o de otra.
-        if (body.collisionMode === CollisionMode.DIE) {
-          // entity.state = EntityState.DEAD
-          // TODO: Quizá deberíamos mandar un "kill" a la entidad.
+        if (body.collisionMode === CollisionMode.STOP) {
+          transform.position.addScale(wall.normal, lpd)
+          body.velocity.reset()
           break
         } else if (body.collisionMode === CollisionMode.SLIDE) {
           transform.position.addScale(wall.normal, lpd)
           // FIXME: Esto arregla la "expulsión" del jugador fuera de los sectores pero
           // es una puta mierda.
-          body.velocity.addScale(wall.normal, lpd)
+          if (lpd > 0) {
+            body.velocity.addScale(wall.normal, lpd)
+          }
         } else if (body.collisionMode === CollisionMode.BOUNCE) {
           transform.position.addScale(wall.normal, lpd)
           body.velocity.negate()
@@ -150,13 +155,6 @@ export default class LevelCollider {
       ) {
         // TODO: Esto debería ser algo así como "muere cuando te pares" pero
         // quizá debería estar en otro lugar.
-        if (body.dieOnStop) {
-          if (body.velocity.almostZero()) {
-            // TODO: Quizá deberíamos mandar un "kill" a la
-            // entidad.
-            // entity.kill()
-          }
-        }
       }
 
       body.velocity.scale(body.friction ?? 1)

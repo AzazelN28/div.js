@@ -1,11 +1,20 @@
 import EntityComponent from '../../core/EntityComponent'
 
 export default class SpriteComponent extends EntityComponent {
-  constructor({ entity, source = null, width = 16, height = 16, pivot = 16 } = {}) {
+  constructor({ entity, source = null, pivot = 28 } = {}) {
     super(entity)
+    /**
+     * Imagen que vamos a utilizar a la hora de renderizar el sprite.
+     *
+     * @type {CanvasImageSource}
+     */
     this.source = source
-    this.width = width
-    this.height = height
+    /**
+     * Pivote del sprite. Permite renderizar el sprite desplazado
+     * en el eje vertical tantos píxeles como indiquemos.
+     *
+     * @type {number}
+     */
     this.pivot = pivot
   }
 }

@@ -70,6 +70,7 @@ export default class Game {
     })
     this.#visibility = new Visibility({ registry: this.#registry })
     this.#renderer.debug.push(() => `${this.#frameCounter.framesPerSecond}fps`)
+    this.#audio = new Audio({ audioContext, registry: this.#registry })
     this.#loop = new Loop({
       pipeline: [
         (time) => this.#frameCounter.update(time),
@@ -78,11 +79,11 @@ export default class Game {
         () => this.#collider.update(),
         () => this.#scheduler.update(),
         () => this.#visibility.update(),
+        () => this.#audio.update(),
         (time) => this.#renderer.render(time),
         (time) => this.#renderer.renderDebug(time)
       ]
     })
-    this.#audio = new Audio({ audioContext })
   }
 
   get input() {

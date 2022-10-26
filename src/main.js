@@ -12,6 +12,10 @@ import { CollisionMode } from './fps/systems/Collider'
 import ViewComponent from './fps/components/ViewComponent'
 import FacetedSpriteComponent from './fps/components/FacetedSpriteComponent'
 
+import AudioListenerComponent from './audio/components/AudioListenerComponent'
+import AudioEmitterComponent from './audio/components/AudioEmitterComponent'
+import SpriteComponent from './fps/components/SpriteComponent'
+
 const canvas = document.querySelector('canvas')
 const game = new Game({
   canvas,
@@ -34,13 +38,40 @@ const game = new Game({
         ['keyboard', ['KeyS']]
       ]
     ],
-    ['fire', [['keyboard', ['Space']]]]
+    ['fire', [['keyboard', ['KeyZ']]]],
+    ['jump', [['keyboard', ['Space']]]]
   ])
 })
 
 window.game = game
 
+function * ProjectileBehaviour(game, parentTransform) {
+  const transform = game.registry.create(TransformComponent)
+  transform.position.copy(parentTransform.position)
+  transform.rotation = parentTransform.rotation
+
+  const body = game.registry.create(BodyComponent)
+  body.collisionMode = CollisionMode.STOP
+
+  const renderable = game.registry.create(SpriteComponent, {
+    source: game.resources.get('/assets/texture/SLIME15.png')
+  })
+  this.set('transform', transform)
+  this.set('body', body)
+  this.set('renderable', renderable)
+
+  body.friction = 1
+  body.velocity.x = Math.cos(transform.rotation) * 10
+  body.velocity.y = Math.sin(transform.rotation) * 10
+  while (body.walls.size == 0)
+  {
+    yield
+  }
+}
+
 async function * LevelBehaviour(game) {
+  await game.resources.load('/assets/music/goof.mp3')
+  game.audio.music.play(game.resources.get('/assets/music/goof.mp3'))
   await game.resources.load('/assets/texture/SLIME15.png')
   await game.resources.load('/assets/texture/WALL30_4.png')
   await game.resources.load('/assets/texture/M1_1.png')
@@ -49,10 +80,12 @@ async function * LevelBehaviour(game) {
   await game.resources.load('/assets/texture/PLAYA3A7.png')
   await game.resources.load('/assets/texture/PLAYA4A6.png')
   await game.resources.load('/assets/texture/PLAYA5.png')
+  await game.resources.load('/assets/ambient/UB03-005 1.mp3')
+
 
   // Retro MSDOS style
-  // game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
-  game.setMode({ mode: ResizeMode.FILL, scale: 0.5 })
+  game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
+  // game.setMode({ mode: ResizeMode.FILL, scale: 0.5 })
   const first = new Sector()
   const second = new Sector()
   const third = new Sector()
@@ -103,7 +136,7 @@ async function * LevelBehaviour(game) {
     game.level.walls[7]
   ]
   second.floor.height = 4
-  second.ceiling.height = 48
+  second.ceiling.height = 72
   third.walls = [
     game.level.walls[8],
     game.level.walls[9],
@@ -111,7 +144,7 @@ async function * LevelBehaviour(game) {
     game.level.walls[11]
   ]
   third.floor.height = 0
-  third.ceiling.height = 64
+  third.ceiling.height = 96
 
   game.level.walls[1].middle.texture = '/assets/texture/M1_1.png'
   game.level.walls[5].middle.texture = '/assets/texture/M1_1.png'
@@ -149,9 +182,15 @@ function * EnemyBehaviour(game, x = 0, y = 0) {
       game.resources.get('/assets/texture/PLAYA2A8.png')
     ]
   })
+  const emitter = game.registry.create(AudioEmitterComponent, {
+    buffer: game.resources.get('/assets/ambient/UB03-005 1.mp3'),
+    start: true,
+    loop: true
+  })
   this.set('transform', transform)
   this.set('body', body)
   this.set('renderable', renderable)
+  this.set('emitter', emitter)
 
   body.velocity.x = 1
   while (true)
@@ -167,6 +206,7 @@ function * PlayerBehaviour(game) {
   body.collisionMode = CollisionMode.SLIDE
   this.set('view', game.registry.create(ViewComponent))
   this.set('body', body)
+  this.set('listener', game.registry.create(AudioListenerComponent))
 
   while (true)
   {
@@ -175,19 +215,25 @@ function * PlayerBehaviour(game) {
     } else if (game.input.stateOf('right')) {
       transform.rotation += 0.1
     }
+
     if (game.input.stateOf('strafeLeft')) {
-      body.velocity.x += transform.direction.y * 0.1
-      body.velocity.y -= transform.direction.x * 0.1
+      body.velocity.addScale(transform.direction.clone().perpLeft(), 0.1)
     } else if (game.input.stateOf('strafeRight')) {
-      body.velocity.x -= transform.direction.y * 0.1
-      body.velocity.y += transform.direction.x * 0.1
+      body.velocity.addScale(transform.direction.clone().perpRight(), 0.1)
     }
+
     if (game.input.stateOf('forward')) {
-      body.velocity.x += transform.direction.x * 0.1
-      body.velocity.y += transform.direction.y * 0.1
+      body.velocity.addScale(transform.direction, 0.1)
     } else if (game.input.stateOf('backward')) {
-      body.velocity.x -= transform.direction.x * 0.1
-      body.velocity.y -= transform.direction.y * 0.1
+      body.velocity.addScale(transform.direction, -0.1)
+    }
+
+    if (game.input.stateOf('fire')) {
+      game.scheduler.create('projectile', game, transform)
+    }
+
+    if (game.input.stateOf('jump') && body.isOnGround) {
+      body.velocity.z = 5
     }
     yield // frame;
   }
@@ -196,6 +242,7 @@ function * PlayerBehaviour(game) {
 game.scheduler.register('level', LevelBehaviour)
 game.scheduler.register('enemy', EnemyBehaviour)
 game.scheduler.register('player', PlayerBehaviour)
+game.scheduler.register('projectile', ProjectileBehaviour)
 
 game.scheduler.create('level', game)
 

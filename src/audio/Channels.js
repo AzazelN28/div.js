@@ -1,10 +1,23 @@
+/**
+ * @typedef {Object} ChannelsConstructorOptions
+ * @property {AudioContext} audioContext
+ * @property {Array<string>} channelNames
+ */
+
+/**
+ * Canal
+ */
 export class Channel {
   /**
+   * Nombre del canal
+   *
    * @type {string}
    */
   #name
 
   /**
+   * Nodo de ganancia.
+   *
    * @type {GainNode}
    */
   #gain
@@ -25,27 +38,43 @@ export class Channel {
 
 export default class Channels {
   /**
+   * Contexto de audio
+   *
    * @type {AudioContext}
    */
   #audioContext
 
   /**
+   * Canales
+   *
    * @type {Map<string, GainNode>}
    */
   #channels
 
   /**
+   * Nombres de los canales
+   *
    * @type {Array<string>}
    */
   #channelNames
 
   /**
+   * Nodo de ganancia maestro
+   *
    * @type {GainNode}
    */
   #master
 
+  /**
+   * Constructor
+   *
+   * @param {ChannelsConstructorOptions} options
+   */
   constructor({ audioContext, channelNames = ['music', 'sfx'] }) {
-    if (!Array.isArray(channelNames) || !channelNames.every((channelName) => typeof channelName === 'string')) {
+    if (
+      !Array.isArray(channelNames) ||
+      !channelNames.every((channelName) => typeof channelName === 'string')
+    ) {
       throw new Error('Invalid channel names')
     }
     this.#audioContext = audioContext

@@ -80,6 +80,14 @@ export default class Vector2 {
     return this.set(this.x + x * s, this.y + y * s)
   }
 
+  addPerpLeftScale({ x, y }, s) {
+    return this.set(this.x + y * s, this.y - x * s)
+  }
+
+  addPerpRightScale({ x, y }, s) {
+    return this.set(this.x - y * s, this.y + x * s)
+  }
+
   subtract({ x, y }) {
     return this.set(this.x - x, this.y - y)
   }

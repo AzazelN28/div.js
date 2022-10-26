@@ -10,6 +10,8 @@ import Texture from './Texture'
 import Resources from '../../core/Resources'
 import EntityComponentRegistry from '../../core/EntityComponentRegistry'
 import Level from '../level/Level'
+import Wall from '../level/Wall'
+import Sector from '../level/Sector'
 import FacetedSpriteComponent from '../components/FacetedSpriteComponent'
 export default class Renderer {
   #canvas
@@ -75,18 +77,20 @@ export default class Renderer {
         gl,
         gl.ARRAY_BUFFER,
         new Float32Array([
-          -1, -1, 0, 0, 1,
-          1, -1, 0, 1, 1,
-          1,  1, 0, 1, 0,
-          -1,  1, 0, 0, 0,
+          -0.5, -0.5, 0, 0, 1,
+          0.5, -0.5, 0, 1, 1,
+          0.5,  0.5, 0, 1, 0,
+          -0.5,  0.5, 0, 0, 0,
         ]),
         gl.STATIC_DRAW
       ),
       count: 4
     })
 
-    const checkerboardTexture = Texture.createCheckerboard(64)
-    this.#textures.set('default', GLU.createTextureFromSource(gl, checkerboardTexture))
+    this.#textures.set(
+      'default',
+      GLU.createTextureFromSource(gl, Texture.createCheckerboard(64))
+    )
 
     this.#program = GLU.createProgramFromSources(
       gl,
@@ -98,6 +102,10 @@ export default class Renderer {
 
   get debug() {
     return this.#debug
+  }
+
+  #getTexture(texture) {
+    return this.#textures.has(texture) ? this.#textures.get(texture) : this.#textures.get('default')
   }
 
   #renderMaskedWall(time, view, wall) {
@@ -112,7 +120,7 @@ export default class Renderer {
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
-      this.#textures.get(wall.middle.texture),
+      this.#getTexture(wall.middle.texture),
       0
     )
     const { buffer } = this.#buffers.get(wall.middle)
@@ -120,12 +128,6 @@ export default class Renderer {
     GLU.unsetTexture(gl)
 
     view.renderedWalls++
-  }
-
-  #renderMaskedWalls(time, view) {
-    for (const wall of view.maskedWalls) {
-      this.#renderMaskedWall(time, view, wall)
-    }
   }
 
   #renderMaskedFacetedSprite(time, view, sprite) {
@@ -159,7 +161,7 @@ export default class Renderer {
       view.model,
       -viewTransform.rotation + Math.PI * 0.5
     )
-    mat4.scale(view.model, view.model, [sprite.width, sprite.height, 1])
+    mat4.scale(view.model, view.model, [source.width, source.height, 1])
     mat4.multiply(view.modelViewProjection, view.perspectiveView, view.model)
 
     gl.uniformMatrix4fv(
@@ -172,22 +174,21 @@ export default class Renderer {
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
-      this.#textures.has(source)
-        ? this.#textures.get(source)
-        : this.#textures.get('default'),
+      this.#getTexture(source),
       0
     )
     const { buffer } = this.#buffers.get('sprite')
     GLU.drawQuad(gl, buffer)
     GLU.unsetTexture(gl)
 
-    view.renderedEntities++
+    view.renderedMaskedFacetedSprites++
   }
 
   #renderMaskedSprite(time, view, sprite) {
     const gl = this.#context
     const viewTransform = view.entity.get('transform')
     const transform = sprite.entity.get('transform')
+    const source = sprite.source
 
     vec3.set(
       view.position,
@@ -202,7 +203,7 @@ export default class Renderer {
     // TODO: Podríamos hacer un ajuste "más fino" de la rotación
     // pero realmente con esto vale por el momento.
     mat4.rotateY(view.model, view.model, -viewTransform.rotation + Math.PI * 0.5)
-    mat4.scale(view.model, view.model, [sprite.width, sprite.height, 1])
+    mat4.scale(view.model, view.model, [source.width, source.height, 1])
     mat4.multiply(view.modelViewProjection, view.perspectiveView, view.model)
 
     gl.uniformMatrix4fv(
@@ -215,58 +216,66 @@ export default class Renderer {
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
-      this.#textures.has(sprite.source)
-        ? this.#textures.get(sprite.source)
-        : this.#textures.get('default'),
+      this.#getTexture(source),
       0
     )
     const { buffer } = this.#buffers.get('sprite')
     GLU.drawQuad(gl, buffer)
     GLU.unsetTexture(gl)
 
-    view.renderedEntities++
-  }
-
-  #renderMaskedSprites(time, view) {
-    for (const sprite of this.#registry.get(SpriteComponent)) {
-      this.#renderMaskedSprite(time, view, sprite)
-    }
-  }
-
-  #renderMasked(time, view) {
-    this.#renderMaskedSprites(time, view)
-    this.#renderMaskedWalls(time, view)
+    view.renderedMaskedSprites++
   }
 
   #renderMaskedSorted(time, view) {
     const transform = view.entity.get('transform')
     {
       const facetedSprites = Array.from(this.#registry.get(FacetedSpriteComponent))
-      const maskedSprites = facetedSprites.map((sprite) => {
-        const spriteTransform = sprite.entity.get('transform')
-        const distance = spriteTransform.position.distanceTo(transform.position)
-        return {
-          type: 'faceted-sprite',
-          object: sprite,
-          distance
-        }
-      })
+      const maskedSprites = facetedSprites
+        .filter((sprite) => sprite.entity)
+        .map((sprite) => {
+          const spriteTransform = sprite.entity.get('transform')
+          const distance = spriteTransform.position.distanceTo(transform.position)
+          return {
+            type: 'faceted-sprite',
+            object: sprite,
+            distance
+          }
+        })
       view.masked.push(...maskedSprites)
     }
     {
       const sprites = Array.from(this.#registry.get(SpriteComponent))
-      const maskedSprites = sprites.map((sprite) => {
-        const spriteTransform = sprite.entity.get('transform')
-        const distance = spriteTransform.position.distanceTo(transform.position)
-        return {
-          type: 'sprite',
-          object: sprite,
-          distance
-        }
-      })
+      const maskedSprites = sprites
+        .filter((sprite) => sprite.entity)
+        .map((sprite) => {
+          const spriteTransform = sprite.entity.get('transform')
+          const distance = spriteTransform.position.distanceTo(transform.position)
+          return {
+            type: 'sprite',
+            object: sprite,
+            distance
+          }
+        })
       view.masked.push(...maskedSprites)
     }
-    const sortedMasked = view.masked.sort((a, b) => b.distance - a.distance)
+    const sortedMasked = view.masked.sort((a, b) => {
+      // TODO: Ver de qué forma podemos ajustar todas estas mandangas para que
+      // el cálculo de la profundidad sea correcto entre paredes y entidades.
+      /*
+      if (((a.object instanceof SpriteComponent || a.object instanceof FacetedSpriteComponent) && (b.object instanceof SpriteComponent || b.object instanceof FacetedSpriteComponent))
+       || (a.object instanceof Wall && b.object instanceof Wall))
+        return b.distance - a.distance
+      else
+      {
+        if (a.object instanceof Wall) {
+          return a.object.line.distance(b.object.entity.get('transform').position)
+        } else {
+          return b.object.line.distance(a.object.entity.get('transform').position)
+        }
+      }
+      */
+      return b.distance - a.distance
+    })
     for (const masked of sortedMasked) {
       if (masked.type === 'wall') {
         this.#renderMaskedWall(time, view, masked.object)
@@ -275,6 +284,7 @@ export default class Renderer {
       } else if (masked.type === 'faceted-sprite') {
         this.#renderMaskedFacetedSprite(time, view, masked.object)
       }
+      view.renderedMasked++
     }
   }
 
@@ -311,7 +321,7 @@ export default class Renderer {
           GLU.setTexture(
             gl,
             this.#programInfo.uniforms.u_sampler.location,
-            this.#textures.get(wall.bottom.texture),
+            this.#getTexture(wall.bottom.texture),
             0
           )
           const { buffer } = this.#buffers.get(wall.bottom)
@@ -334,7 +344,7 @@ export default class Renderer {
           GLU.setTexture(
             gl,
             this.#programInfo.uniforms.u_sampler.location,
-            this.#textures.get(wall.top.texture),
+            this.#getTexture(wall.top.texture),
             0
           )
           const { buffer } = this.#buffers.get(wall.top)
@@ -348,7 +358,7 @@ export default class Renderer {
         GLU.setTexture(
           gl,
           this.#programInfo.uniforms.u_sampler.location,
-          this.#textures.get(wall.middle.texture),
+          this.#getTexture(wall.middle.texture),
           0
         )
         const { buffer } = this.#buffers.get(wall.middle)
@@ -363,7 +373,7 @@ export default class Renderer {
     view.renderedPlanes = 0
     // TODO: No tengo muy claro si esta debería ser la forma
     // de hacer esto.
-    view.entities.clear()
+    // view.entities.clear()
     gl.uniform2f(this.#programInfo.uniforms.u_flip.location, 0, 0)
     for (const sector of view.sectors) {
       const { floor, ceiling } = sector
@@ -382,7 +392,7 @@ export default class Renderer {
 
       // gl.uniform3f(this.#programInfo.uniforms.u_color.location, 1, 0, 1)
       if (floor.texture) {
-        GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#textures.get(floor.texture), 0)
+        GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#getTexture(floor.texture), 0)
         const { buffer, count } = this.#buffers.get(floor)
         GLU.drawPoly(gl, buffer, count)
         GLU.unsetTexture(gl)
@@ -392,7 +402,7 @@ export default class Renderer {
 
       // gl.uniform3f(this.#programInfo.uniforms.u_color.location, 0.5, 0, 0.5)
       if (ceiling.texture) {
-        GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#textures.get(ceiling.texture), 0)
+        GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#getTexture(ceiling.texture), 0)
         const { buffer, count } = this.#buffers.get(ceiling)
         GLU.drawPoly(gl, buffer, count)
         GLU.unsetTexture(gl)
