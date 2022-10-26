@@ -1,4 +1,5 @@
 import EntityComponent from '../../core/EntityComponent'
+import Vector2 from '../../math/Vector2'
 
 export default class SpriteComponent extends EntityComponent {
   constructor({ entity, source = null, pivot = 28 } = {}) {
@@ -16,5 +17,7 @@ export default class SpriteComponent extends EntityComponent {
      * @type {number}
      */
     this.pivot = pivot
+    
+    this.flip = new Vector2()
   }
 }

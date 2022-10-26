@@ -13,6 +13,8 @@ import Level from '../level/Level'
 import Wall from '../level/Wall'
 import Sector from '../level/Sector'
 import FacetedSpriteComponent from '../components/FacetedSpriteComponent'
+import UISpriteComponent from '../components/UISpriteComponent'
+import UITextComponent from '../components/UITextComponent'
 export default class Renderer {
   #canvas
   /**
@@ -77,10 +79,10 @@ export default class Renderer {
         gl,
         gl.ARRAY_BUFFER,
         new Float32Array([
-          -0.5, -0.5, 0, 0, 1,
-          0.5, -0.5, 0, 1, 1,
-          0.5,  0.5, 0, 1, 0,
-          -0.5,  0.5, 0, 0, 0,
+          -0.5, -0.5, 0, 0, 0,
+          0.5, -0.5, 0, 1, 0,
+          0.5,  0.5, 0, 1, 1,
+          -0.5,  0.5, 0, 0, 1,
         ]),
         gl.STATIC_DRAW
       ),
@@ -141,8 +143,8 @@ export default class Renderer {
       sprite.sources.length
     )
     const source = sprite.sources[sourceIndex]
-    const flipX = sprite?.isFlipped ? (sourceIndex > (sprite.sources.length >> 1) ? 1.0 : 0.0) : 0.0
-    const flipY = 1
+    const flipX = sprite?.isResourceful ? (sourceIndex > (sprite.sources.length >> 1) ? 1.0 - sprite.flip.x : sprite.flip.x) : sprite.flip.x
+    const flipY = sprite.flip.y
 
     vec3.set(
       view.position,
@@ -227,6 +229,7 @@ export default class Renderer {
   }
 
   #renderMaskedSorted(time, view) {
+    const gl = this.#context
     const transform = view.entity.get('transform')
     {
       const facetedSprites = Array.from(this.#registry.get(FacetedSpriteComponent))
@@ -236,9 +239,8 @@ export default class Renderer {
           const spriteTransform = sprite.entity.get('transform')
           const distance = spriteTransform.position.distanceTo(transform.position)
           return {
-            type: 'faceted-sprite',
             object: sprite,
-            distance
+            distance: distance
           }
         })
       view.masked.push(...maskedSprites)
@@ -251,38 +253,56 @@ export default class Renderer {
           const spriteTransform = sprite.entity.get('transform')
           const distance = spriteTransform.position.distanceTo(transform.position)
           return {
-            type: 'sprite',
             object: sprite,
-            distance
+            distance: distance
           }
         })
       view.masked.push(...maskedSprites)
     }
-    const sortedMasked = view.masked.sort((a, b) => {
-      // TODO: Ver de qué forma podemos ajustar todas estas mandangas para que
-      // el cálculo de la profundidad sea correcto entre paredes y entidades.
-      /*
-      if (((a.object instanceof SpriteComponent || a.object instanceof FacetedSpriteComponent) && (b.object instanceof SpriteComponent || b.object instanceof FacetedSpriteComponent))
-       || (a.object instanceof Wall && b.object instanceof Wall))
-        return b.distance - a.distance
-      else
-      {
-        if (a.object instanceof Wall) {
-          return a.object.line.distance(b.object.entity.get('transform').position)
-        } else {
-          return b.object.line.distance(a.object.entity.get('transform').position)
+
+    // FIXME: Esto no sirve porque las distancias son "signed" y además
+    // la pared de referencia es MUY importante.
+    /*
+    const refMaskedWall = view.masked.find((masked) => masked.object instanceof Wall && masked.distance >= 0)
+    if (refMaskedWall) {
+      view.masked.forEach((masked) => {
+        if (masked.object instanceof Wall) {
+          return
         }
+        const transform = masked.object.entity.get('transform')
+        const distanceToWall = refMaskedWall.object.line.distance(transform.position)
+        const newDistance = refMaskedWall.distance - distanceToWall
+
+        masked.distance = newDistance
+      })
+    }
+    */
+    view.masked.forEach((masked) => {
+      if (masked.object instanceof Wall) {
+        return
       }
-      */
-      return b.distance - a.distance
+
+      const transform = masked.object.entity.get('transform')
+      const refMaskedWall = view.masked.find((masked) => masked.object instanceof Wall && masked.distance >= 0 && masked.object.line.distance(transform.position) < 0)
+      if (refMaskedWall) {
+        const distanceToWall = refMaskedWall.object.line.distance(transform.position)
+        const newDistance = refMaskedWall.distance - distanceToWall
+        masked.distance = newDistance
+      }
     })
+
+    const sortedMasked = view.masked.sort((a, b) => b.distance - a.distance)
     for (const masked of sortedMasked) {
-      if (masked.type === 'wall') {
+      if (masked.object instanceof Wall) {
         this.#renderMaskedWall(time, view, masked.object)
-      } else if (masked.type === 'sprite') {
+      } else if (masked.object instanceof SpriteComponent) {
+        // gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedSprite(time, view, masked.object)
-      } else if (masked.type === 'faceted-sprite') {
+        // gl.enable(gl.DEPTH_TEST)
+      } else if (masked.object instanceof FacetedSpriteComponent) {
+        // gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedFacetedSprite(time, view, masked.object)
+        // gl.enable(gl.DEPTH_TEST)
       }
       view.renderedMasked++
     }
@@ -334,7 +354,6 @@ export default class Renderer {
         if (wall.middle.texture) {
           const distance = wall.line.distance(transform.position)
           view.masked.push({
-            type: 'wall',
             object: wall,
             distance
           })
@@ -517,11 +536,76 @@ export default class Renderer {
    * @param {ViewComponent} view
    */
   #render2D(time, view) {
+    const gl = this.#context
+    gl.disable(gl.DEPTH_TEST)
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     // TODO: Aquí deberíamos renderizar los elementos del HUD que se corresponden
     // con esta vista.
+    for (const component of this.#registry.get(UISpriteComponent)) {
+      const transform = component.entity.get('transform')
+      const flipX = component.flip.x, flipY = component.flip.y
+      const source = component.source
+      if (!this.#textures.has(source)) {
+        const texture = GLU.createTextureFromSource(gl, source)
+        this.#textures.set(source, texture)
+      }
+
+      if (component.autoPivot) {
+        // TODO: Esto sería si AutoPivot vale 'bottom', ya que el autoPivot
+        // lo que hace es posicionar el objeto en el punto de rotación indicado.
+        // TODO: Quizá sería interesante que el pivote se coloque a través
+        // del vertex shader pasándole un `u_pivot`.
+        vec3.set(
+          view.position,
+          transform.position.x,
+          transform.position.y - (source.height * 0.5),
+          transform.position.z
+        )
+      } else {
+        vec3.set(
+          view.position,
+          transform.position.x + component.pivot.x,
+          transform.position.y + component.pivot.y,
+          transform.position.z
+        )
+      }
+      mat4.identity(view.model)
+      mat4.identity(view.modelViewProjection)
+      mat4.translate(view.model, view.model, view.position)
+      // TODO: Podríamos hacer un ajuste "más fino" de la rotación
+      // pero realmente con esto vale por el momento.
+      mat4.rotateZ(
+        view.model,
+        view.model,
+        transform.rotation
+      )
+      mat4.scale(view.model, view.model, [component.size.x * transform.scale.x, component.size.y * transform.scale.y, transform.scale.z])
+      mat4.multiply(view.modelViewProjection, view.ortho, view.model)
+
+      gl.uniformMatrix4fv(
+        this.#programInfo.uniforms.u_modelViewProjection.location,
+        gl.FALSE,
+        view.modelViewProjection
+      )
+
+      gl.uniform2f(this.#programInfo.uniforms.u_flip.location, flipX, flipY)
+      GLU.setTexture(
+        gl,
+        this.#programInfo.uniforms.u_sampler.location,
+        this.#getTexture(source),
+        0
+      )
+      const { buffer } = this.#buffers.get('sprite')
+      GLU.drawQuad(gl, buffer)
+      GLU.unsetTexture(gl)
+    }
+    gl.disable(gl.BLEND)
+    gl.enable(gl.DEPTH_TEST)
   }
 
   /**
+   * Renderizamos la vista.
    *
    * @param {number} time
    * @param {ViewComponent} view

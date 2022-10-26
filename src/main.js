@@ -5,6 +5,7 @@ import Vector2 from './math/Vector2'
 import Line from './math/Line'
 import Wall from './fps/level/Wall'
 import Sector from './fps/level/Sector'
+import Timer from './core/Timer'
 
 import TransformComponent from './fps/components/TransformComponent'
 import BodyComponent from './fps/components/BodyComponent'
@@ -15,6 +16,8 @@ import FacetedSpriteComponent from './fps/components/FacetedSpriteComponent'
 import AudioListenerComponent from './audio/components/AudioListenerComponent'
 import AudioEmitterComponent from './audio/components/AudioEmitterComponent'
 import SpriteComponent from './fps/components/SpriteComponent'
+import UITextComponent from './fps/components/UITextComponent'
+import UISpriteComponent from './fps/components/UISpriteComponent'
 
 const canvas = document.querySelector('canvas')
 const game = new Game({
@@ -45,6 +48,40 @@ const game = new Game({
 
 window.game = game
 
+function * ExplosionBehaviour(game, parentTransform) {
+  const emitter = game.registry.create(AudioEmitterComponent, {
+    buffer: game.resources.get('/assets/sfx/DSBAREXP.wav'),
+    start: true,
+    refDistance: 128,
+    maxDistance: 256
+  })
+  const transform = game.registry.create(TransformComponent)
+  transform.position.copy(parentTransform.position)
+  transform.rotation = parentTransform.rotation
+
+  const animation = [
+    '/assets/weapons/ROCKETEXP00.png',
+    '/assets/weapons/ROCKETEXP01.png',
+    '/assets/weapons/ROCKETEXP02.png'
+  ]
+  const renderable = game.registry.create(SpriteComponent, {
+    source: game.resources.get('/assets/weapons/ROCKETEXP00.png')
+  })
+  this.set('emitter', emitter)
+  this.set('transform', transform)
+  this.set('renderable', renderable)
+
+  const timer = new Timer()
+  let animationIndex = 0
+  while (animationIndex < 2) {
+    if (timer.elapsed(100)) {
+      animationIndex = (animationIndex + 1) % animation.length
+      renderable.source = game.resources.get(animation[animationIndex])
+    }
+    yield
+  }
+}
+
 function * ProjectileBehaviour(game, parentTransform) {
   const transform = game.registry.create(TransformComponent)
   transform.position.copy(parentTransform.position)
@@ -53,9 +90,19 @@ function * ProjectileBehaviour(game, parentTransform) {
   const body = game.registry.create(BodyComponent)
   body.collisionMode = CollisionMode.STOP
 
-  const renderable = game.registry.create(SpriteComponent, {
-    source: game.resources.get('/assets/texture/SLIME15.png')
+  const renderable = game.registry.create(FacetedSpriteComponent, {
+    sources: [
+      game.resources.get('/assets/weapons/ROCKET_F.png'),
+      game.resources.get('/assets/weapons/ROCKETFS.png'),
+      game.resources.get('/assets/weapons/ROCKET_S.png'),
+      game.resources.get('/assets/weapons/ROCKETRS.png'),
+      game.resources.get('/assets/weapons/ROCKET_R.png'),
+      game.resources.get('/assets/weapons/ROCKETRS.png'),
+      game.resources.get('/assets/weapons/ROCKET_S.png'),
+      game.resources.get('/assets/weapons/ROCKETFS.png')
+    ]
   })
+  renderable.flip.x = 1
   this.set('transform', transform)
   this.set('body', body)
   this.set('renderable', renderable)
@@ -63,25 +110,96 @@ function * ProjectileBehaviour(game, parentTransform) {
   body.friction = 1
   body.velocity.x = Math.cos(transform.rotation) * 10
   body.velocity.y = Math.sin(transform.rotation) * 10
-  while (body.walls.size == 0)
+
+  let shouldStop = false
+  while (!shouldStop)
   {
+    if (body.walls.size > 0) {
+      for (const wall of body.walls) {
+        if (wall.isSingleSided) {
+          shouldStop = true
+          break
+        }
+      }
+    }
     yield
   }
+
+  game.scheduler.create('explosion', game, transform)
 }
 
 async function * LevelBehaviour(game) {
-  await game.resources.load('/assets/music/goof.mp3')
-  game.audio.music.play(game.resources.get('/assets/music/goof.mp3'))
-  await game.resources.load('/assets/texture/SLIME15.png')
-  await game.resources.load('/assets/texture/WALL30_4.png')
-  await game.resources.load('/assets/texture/M1_1.png')
-  await game.resources.load('/assets/texture/PLAYA1.png')
-  await game.resources.load('/assets/texture/PLAYA2A8.png')
-  await game.resources.load('/assets/texture/PLAYA3A7.png')
-  await game.resources.load('/assets/texture/PLAYA4A6.png')
-  await game.resources.load('/assets/texture/PLAYA5.png')
-  await game.resources.load('/assets/ambient/UB03-005 1.mp3')
-
+  // game.audio.music.play(game.resources.get('/assets/music/goof.mp3'))
+  await Promise.all([
+    game.resources.load('/assets/texture/SLIME15.png'),
+    game.resources.load('/assets/texture/WALL30_4.png'),
+    game.resources.load('/assets/texture/M1_1.png'),
+    game.resources.load('/assets/texture/PLAYA1.png'),
+    game.resources.load('/assets/texture/PLAYA2A8.png'),
+    game.resources.load('/assets/texture/PLAYA3A7.png'),
+    game.resources.load('/assets/texture/PLAYA4A6.png'),
+    game.resources.load('/assets/texture/PLAYA5.png'),
+    game.resources.load('/assets/weapons/HAND00.png'),
+    game.resources.load('/assets/weapons/HAND01.png'),
+    game.resources.load('/assets/weapons/HAND02.png'),
+    game.resources.load('/assets/weapons/HAND03.png'),
+    game.resources.load('/assets/weapons/CHAINSAW00.png'),
+    game.resources.load('/assets/weapons/CHAINSAW01.png'),
+    game.resources.load('/assets/weapons/CHAINSAW02.png'),
+    game.resources.load('/assets/weapons/CHAINSAW03.png'),
+    game.resources.load('/assets/weapons/PISTOL00.png'),
+    game.resources.load('/assets/weapons/PISTOL01.png'),
+    game.resources.load('/assets/weapons/PISTOL02.png'),
+    game.resources.load('/assets/weapons/PISTOL03.png'),
+    game.resources.load('/assets/weapons/PISTOL04.png'),
+    game.resources.load('/assets/weapons/PISTOL05.png'),
+    game.resources.load('/assets/weapons/SHOTGUN00.png'),
+    game.resources.load('/assets/weapons/SHOTGUN01.png'),
+    game.resources.load('/assets/weapons/SHOTGUN02.png'),
+    game.resources.load('/assets/weapons/SHOTGUN03.png'),
+    game.resources.load('/assets/weapons/SHOTGUN04.png'),
+    game.resources.load('/assets/weapons/SHOTGUN05.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN00.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN01.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN02.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN03.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN04.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN05.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN06.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN07.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN08.png'),
+    game.resources.load('/assets/weapons/SSHOTGUN09.png'),
+    game.resources.load('/assets/weapons/CHAINGUN00.png'),
+    game.resources.load('/assets/weapons/CHAINGUN01.png'),
+    game.resources.load('/assets/weapons/CHAINGUN02.png'),
+    game.resources.load('/assets/weapons/CHAINGUN03.png'),
+    game.resources.load('/assets/weapons/ROCKETL00.png'),
+    game.resources.load('/assets/weapons/ROCKETL01.png'),
+    game.resources.load('/assets/weapons/ROCKETL02.png'),
+    game.resources.load('/assets/weapons/ROCKETL03.png'),
+    game.resources.load('/assets/weapons/ROCKETL04.png'),
+    game.resources.load('/assets/weapons/ROCKETL05.png'),
+    game.resources.load('/assets/weapons/ROCKET_F.png'),
+    game.resources.load('/assets/weapons/ROCKETFS.png'),
+    game.resources.load('/assets/weapons/ROCKET_S.png'),
+    game.resources.load('/assets/weapons/ROCKETRS.png'),
+    game.resources.load('/assets/weapons/ROCKET_R.png'),
+    game.resources.load('/assets/weapons/ROCKETEXP00.png'),
+    game.resources.load('/assets/weapons/ROCKETEXP01.png'),
+    game.resources.load('/assets/weapons/ROCKETEXP02.png'),
+    game.resources.load('/assets/weapons/PLASMA00.png'),
+    game.resources.load('/assets/weapons/PLASMA01.png'),
+    game.resources.load('/assets/weapons/PLASMA02.png'),
+    game.resources.load('/assets/weapons/PLASMA03.png'),
+    game.resources.load('/assets/weapons/BFG00.png'),
+    game.resources.load('/assets/weapons/BFG01.png'),
+    game.resources.load('/assets/weapons/BFG02.png'),
+    game.resources.load('/assets/weapons/BFG03.png'),
+    game.resources.load('/assets/weapons/BFG04.png'),
+    game.resources.load('/assets/ambient/UB03-005 1.mp3'),
+    game.resources.load('/assets/sfx/DSRLAUNC.wav'),
+    game.resources.load('/assets/sfx/DSBAREXP.wav')
+  ])
 
   // Retro MSDOS style
   game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
@@ -200,13 +318,21 @@ function * EnemyBehaviour(game, x = 0, y = 0) {
 }
 
 function * PlayerBehaviour(game) {
+  const weaponTimer = new Timer()
+
   const transform = game.registry.create(TransformComponent)
   this.set('transform', transform)
+
+  const PlayerSpeed = 0.1
   const body = game.registry.create(BodyComponent)
   body.collisionMode = CollisionMode.SLIDE
-  this.set('view', game.registry.create(ViewComponent))
+
+  const view = game.registry.create(ViewComponent)
+  this.set('view', view)
   this.set('body', body)
   this.set('listener', game.registry.create(AudioListenerComponent))
+
+  const weapon = game.scheduler.create('weapon', game)
 
   while (true)
   {
@@ -216,26 +342,94 @@ function * PlayerBehaviour(game) {
       transform.rotation += 0.1
     }
 
+    weapon.walking = false
     if (game.input.stateOf('strafeLeft')) {
-      body.velocity.addScale(transform.direction.clone().perpLeft(), 0.1)
+      body.velocity.addScale(transform.direction.clone().perpLeft(), PlayerSpeed)
+      weapon.walking = true
     } else if (game.input.stateOf('strafeRight')) {
-      body.velocity.addScale(transform.direction.clone().perpRight(), 0.1)
+      body.velocity.addScale(transform.direction.clone().perpRight(), PlayerSpeed)
+      weapon.walking = true
     }
 
     if (game.input.stateOf('forward')) {
-      body.velocity.addScale(transform.direction, 0.1)
+      body.velocity.addScale(transform.direction, PlayerSpeed)
+      weapon.walking = true
     } else if (game.input.stateOf('backward')) {
-      body.velocity.addScale(transform.direction, -0.1)
+      body.velocity.addScale(transform.direction, -PlayerSpeed)
+      weapon.walking = true
     }
 
     if (game.input.stateOf('fire')) {
-      game.scheduler.create('projectile', game, transform)
+      if (weaponTimer.elapsed(500)) {
+        // FIXME: Le he puesto este nombre tan "maravilloso" para
+        // recordarme que esto está mal y que habría que buscar una
+        // forma mejor con componentes.
+        weapon.bullshit = true
+
+        game.audio.sound.play(game.resources.get('/assets/sfx/DSRLAUNC.wav'))
+        game.scheduler.create('projectile', game, transform)
+      }
     }
 
     if (game.input.stateOf('jump') && body.isOnGround) {
       body.velocity.z = 5
     }
+
+    // document.title = `${view.renderedWalls} ${view.renderedPlanes}`
     yield // frame;
+  }
+}
+
+function * WeaponBehaviour(game) {
+  // FIXME: Esto no pué ser
+  this.bullshit = false
+  this.walking = false
+
+  const transform = game.registry.create(TransformComponent)
+  this.set('transform', transform)
+
+  // Cada uno de estos elementos necesita un "punto de control"
+  // como en DIV para hacer que la animación salga exactamente
+  // donde debe estar.
+  let animationIndex = 0
+  const animation = [
+    '/assets/weapons/ROCKETL00.png',
+    '/assets/weapons/ROCKETL01.png',
+    '/assets/weapons/ROCKETL02.png',
+    '/assets/weapons/ROCKETL03.png',
+    '/assets/weapons/ROCKETL04.png',
+    '/assets/weapons/ROCKETL05.png',
+  ]
+  const renderable = game.registry.create(UISpriteComponent, {
+    source: game.resources.get('/assets/weapons/ROCKETL00.png')
+  })
+  renderable.autoPivot = true
+  this.set('renderable', renderable)
+
+  const timer = new Timer()
+  transform.position.x = 160
+  transform.position.y = 240
+  while (true) {
+    if (this.walking) {
+      transform.position.x = 160 + Math.sin(Date.now() / 500) * 20
+      transform.position.y = 240 + Math.abs(Math.cos(Date.now() / 500) * 10)
+    } else {
+      transform.position.x = 160
+      transform.position.y = 240
+    }
+    if (timer.elapsed(200) && this.bullshit === true) {
+      animationIndex = (animationIndex + 1) % animation.length
+      if (animationIndex === 0) {
+        this.bullshit = false
+      }
+      const source = game.resources.get(animation[animationIndex])
+      renderable.source = source
+      // Es importante actualizar el tamaño después de cambiar el source
+      // porque si no se renderiza con el tamaño original del primer
+      // source.
+      renderable.size.set(source.width, source.height)
+    }
+    yield
   }
 }
 
@@ -243,6 +437,8 @@ game.scheduler.register('level', LevelBehaviour)
 game.scheduler.register('enemy', EnemyBehaviour)
 game.scheduler.register('player', PlayerBehaviour)
 game.scheduler.register('projectile', ProjectileBehaviour)
+game.scheduler.register('weapon', WeaponBehaviour)
+game.scheduler.register('explosion', ExplosionBehaviour)
 
 game.scheduler.create('level', game)
 

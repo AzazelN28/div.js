@@ -1,4 +1,5 @@
 import EntityComponent from '../../core/EntityComponent'
+import Vector2 from '../../math/Vector2'
 
 export default class FacetedSpriteComponent extends EntityComponent {
   constructor({ entity, sources = [], pivot = 28 } = {}) {
@@ -25,6 +26,14 @@ export default class FacetedSpriteComponent extends EntityComponent {
      *
      * @type {boolean}
      */
-    this.isFlipped = true
+    this.isResourceful = true
+    /**
+     * Indica si se debe voltear en alguna dirección.
+     *
+     * ¡IMPORTANTE! Por algún extraño motivo (¿será por el buffer?) esto se renderiza al revés.
+     *
+     * @type {Vector2}
+     */
+    this.flip = new Vector2(0, 0)
   }
 }
