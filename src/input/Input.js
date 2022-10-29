@@ -54,15 +54,19 @@ export default class Input {
     for (const [action, binding] of this.#bindings) {
       let value = 0
       for (const [id, path] of binding) {
-        if (!this.#devices.has(id))
+        if (!this.#devices.has(id)) {
+          console.warn(`Device ${id} not found`)
           continue
+        }
 
         const device = this.#devices.get(id)
-        if (!device)
+        if (!device) {
+          console.warn(`Device ${id} not initialized`)
           continue
+        }
 
         const currentValue = device.stateOf(path)
-        value = Math.max(Math.abs(value), Math.abs(currentValue)) * (Math.sign(currentValue) || 1)
+        value = Math.max(Math.abs(value), Math.abs(currentValue)) /* * (Math.sign(currentValue) || 1) */
       }
       this.#state.set(action, value)
     }

@@ -1,61 +1,85 @@
 import EntityComponent from '../../core/EntityComponent'
 import Vector3 from '../../math/Vector3'
-import { CollisionMode } from '../systems/Collider'
+import CollisionMode from '../systems/CollisionMode'
 
 export default class BodyComponent extends EntityComponent {
-  constructor({ entity } = {}) {
+  constructor({
+    entity,
+    velocity = new Vector3(),
+    friction = 1,
+    gravity = 1,
+    height = 48,
+    radius = 16,
+    stepSize = 16,
+    collisionMode = CollisionMode.STOP,
+    sector = null,
+    walls = new Set(),
+    entities = new Set()
+  } = {}) {
     super(entity)
+
     /**
      * Velocidad
      *
      * @type {Vector3}
      */
-    this.velocity = new Vector3()
+    this.velocity = velocity
+
     /**
      * Fricción
      *
      * @type {number}
      */
-    this.friction = 0.95
+    this.friction = friction
+
     /**
      * Gravedad
      *
      * @type {number}
      */
-    this.gravity = 1
+    this.gravity = gravity
+
     /**
      * Altura del "cuerpo".
      *
      * @type {number}
      */
-    this.height = 48
+    this.height = height
+
     /**
      * Radio del "cuerpo"
      *
      * @type {number}
      */
-    this.radius = 16
+    this.radius = radius
 
     /**
      * Modo de colisión
      *
      * @type {CollisionMode}
      */
-    this.collisionMode = CollisionMode.STOP
+    this.collisionMode = collisionMode
 
     /**
      * Sector en el que se encuentra el "cuerpo".
      *
      * @type {Sector}
      */
-    this.sector = null
+    this.sector = sector
 
     /**
      * Paredes con las que ha colisionado el cuerpo.
      *
      * @type {Set<Wall>}
      */
-    this.walls = new Set()
+    this.walls = walls
+
+    /**
+     * Entidades con las que ha colisionado el cuerpo.
+     *
+     * @type {Set<Entity>}
+     */
+    this.entities = entities
 
     /**
      * Tamaño del paso, esto permite a los "cuerpos"
@@ -63,7 +87,7 @@ export default class BodyComponent extends EntityComponent {
      *
      * @type {number}
      */
-    this.stepSize = 16
+    this.stepSize = stepSize
 
     /**
      * Indica si el cuerpo está en el suelo o no.

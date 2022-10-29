@@ -23,6 +23,8 @@ export default class Wall {
     this.bottom = new WallPart() // texturas de la pared.
     this.front = front // sector frontal
     this.back = back // sector trasero
+    // TODO: Tiene que haber una forma mejor de indicar modificadores
+    // de pared.
     this.isWalkable = true
     this.isMasked = false
   }

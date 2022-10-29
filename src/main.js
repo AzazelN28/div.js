@@ -9,7 +9,7 @@ import Timer from './core/Timer'
 
 import TransformComponent from './fps/components/TransformComponent'
 import BodyComponent from './fps/components/BodyComponent'
-import { CollisionMode } from './fps/systems/Collider'
+import CollisionMode from './fps/systems/CollisionMode'
 import ViewComponent from './fps/components/ViewComponent'
 import FacetedSpriteComponent from './fps/components/FacetedSpriteComponent'
 
@@ -18,58 +18,82 @@ import AudioEmitterComponent from './audio/components/AudioEmitterComponent'
 import SpriteComponent from './fps/components/SpriteComponent'
 import UITextComponent from './fps/components/UITextComponent'
 import UISpriteComponent from './fps/components/UISpriteComponent'
+import Vector3 from './math/Vector3'
 
 const canvas = document.querySelector('canvas')
 const game = new Game({
   canvas,
   bindings: new Map([
-    ['left', [['keyboard', ['ArrowLeft']]]],
-    ['right', [['keyboard', ['ArrowRight']]]],
-    ['strafeLeft', [['keyboard', ['KeyA']]]],
-    ['strafeRight', [['keyboard', ['KeyD']]]],
+    ['left', [
+      ['keyboard', ['ArrowLeft']],
+      ['gamepads', ['any', 'axis', 2, -0.125]],
+    ]],
+    ['right', [
+      ['keyboard', ['ArrowRight']],
+      ['gamepads', ['any', 'axis', 2, 0.125]],
+    ]],
+    ['strafeLeft', [
+      ['keyboard', ['KeyA']],
+      ['gamepads', ['any', 'axis', 0, -0.125]]
+    ]],
+    ['strafeRight', [
+      ['keyboard', ['KeyD']],
+      ['gamepads', ['any', 'axis', 0, 0.125]]
+    ]],
     [
       'forward',
       [
         ['keyboard', ['ArrowUp']],
-        ['keyboard', ['KeyW']]
+        ['keyboard', ['KeyW']],
+        ['gamepads', ['any', 'axis', 1, -0.125]]
       ]
     ],
     [
       'backward',
       [
         ['keyboard', ['ArrowDown']],
-        ['keyboard', ['KeyS']]
+        ['keyboard', ['KeyS']],
+        ['gamepads', ['any', 'axis', 1, 0.125]]
       ]
     ],
-    ['fire', [['keyboard', ['KeyZ']]]],
-    ['jump', [['keyboard', ['Space']]]]
+    ['fire', [
+      ['keyboard', ['KeyZ']],
+      ['gamepads', ['any', 'button', 7, 0.125]]
+    ]],
+    ['jump', [
+      ['keyboard', ['Space']],
+      ['gamepads', ['any', 'button', 0, 0.125]]
+    ]]
   ])
 })
 
 window.game = game
 
 function * ExplosionBehaviour(game, parentTransform) {
-  const emitter = game.registry.create(AudioEmitterComponent, {
-    buffer: game.resources.get('/assets/sfx/DSBAREXP.wav'),
-    start: true,
-    refDistance: 128,
-    maxDistance: 256
-  })
-  const transform = game.registry.create(TransformComponent)
-  transform.position.copy(parentTransform.position)
-  transform.rotation = parentTransform.rotation
-
   const animation = [
     '/assets/weapons/ROCKETEXP00.png',
     '/assets/weapons/ROCKETEXP01.png',
     '/assets/weapons/ROCKETEXP02.png'
   ]
-  const renderable = game.registry.create(SpriteComponent, {
-    source: game.resources.get('/assets/weapons/ROCKETEXP00.png')
-  })
-  this.set('emitter', emitter)
-  this.set('transform', transform)
-  this.set('renderable', renderable)
+  const emitter = this.set('emitter', game.registry.create(AudioEmitterComponent, {
+    buffer: game.resources.get('/assets/sfx/DSBAREXP.wav'),
+    start: true,
+    refDistance: 128,
+    maxDistance: 256
+  }))
+  const transform = this.set(
+    'transform',
+    game.registry.create(TransformComponent, {
+      position: parentTransform.position.clone(),
+      rotation: parentTransform.rotation
+    })
+  )
+  const renderable = this.set(
+    'renderable',
+    game.registry.create(SpriteComponent, {
+      source: game.resources.get('/assets/weapons/ROCKETEXP00.png')
+    })
+  )
 
   const timer = new Timer()
   let animationIndex = 0
@@ -87,8 +111,11 @@ function * ProjectileBehaviour(game, parentTransform) {
   transform.position.copy(parentTransform.position)
   transform.rotation = parentTransform.rotation
 
-  const body = game.registry.create(BodyComponent)
-  body.collisionMode = CollisionMode.STOP
+  const body = game.registry.create(BodyComponent, {
+    velocity: Vector3.fromPolar(transform.rotation, 10),
+    gravity: 0,
+    friction: 1
+  })
 
   const renderable = game.registry.create(FacetedSpriteComponent, {
     sources: [
@@ -107,13 +134,20 @@ function * ProjectileBehaviour(game, parentTransform) {
   this.set('body', body)
   this.set('renderable', renderable)
 
-  body.friction = 1
-  body.velocity.x = Math.cos(transform.rotation) * 10
-  body.velocity.y = Math.sin(transform.rotation) * 10
-
   let shouldStop = false
   while (!shouldStop)
   {
+    if (body.entities.size > 0) {
+      for (const entity of body.entities) {
+        if (entity === this.parent) {
+          continue
+        }
+        shouldStop = true
+        const bodyOther = entity.get('body')
+        bodyOther.velocity.add(body.velocity)
+        break
+      }
+    }
     if (body.walls.size > 0) {
       for (const wall of body.walls) {
         if (wall.isSingleSided) {
@@ -129,6 +163,9 @@ function * ProjectileBehaviour(game, parentTransform) {
 }
 
 async function * LevelBehaviour(game) {
+  // Retro MSDOS style
+  game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
+
   // game.audio.music.play(game.resources.get('/assets/music/goof.mp3'))
   await Promise.all([
     game.resources.load('/assets/texture/SLIME15.png'),
@@ -201,8 +238,6 @@ async function * LevelBehaviour(game) {
     game.resources.load('/assets/sfx/DSBAREXP.wav')
   ])
 
-  // Retro MSDOS style
-  game.setMode({ mode: ResizeMode.NONE, width: 320, height: 200 })
   // game.setMode({ mode: ResizeMode.FILL, scale: 0.5 })
   const first = new Sector()
   const second = new Sector()
@@ -221,23 +256,63 @@ async function * LevelBehaviour(game) {
     new Vector2(192, -128),
     new Vector2(320, -128),
     new Vector2(320, 128),
-    new Vector2(192, 128),
+    new Vector2(192, 128)
   )
   game.level.walls.push(
-    new Wall({ line: new Line(game.level.vertices[0], game.level.vertices[1]), front: first }),
-    new Wall({ line: new Line(game.level.vertices[1], game.level.vertices[2]), front: first, back: second }),
-    new Wall({ line: new Line(game.level.vertices[2], game.level.vertices[3]), front: first }),
-    new Wall({ line: new Line(game.level.vertices[3], game.level.vertices[0]), front: first }),
+    new Wall({
+      line: new Line(game.level.vertices[0], game.level.vertices[1]),
+      front: first
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[1], game.level.vertices[2]),
+      front: first,
+      back: second
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[2], game.level.vertices[3]),
+      front: first
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[3], game.level.vertices[0]),
+      front: first
+    }),
 
-    new Wall({ line: new Line(game.level.vertices[4], game.level.vertices[5]), front: second }),
-    new Wall({ line: new Line(game.level.vertices[5], game.level.vertices[6]), front: second, back: third }),
-    new Wall({ line: new Line(game.level.vertices[6], game.level.vertices[7]), front: second }),
-    new Wall({ line: new Line(game.level.vertices[7], game.level.vertices[4]), front: second, back: first }),
+    new Wall({
+      line: new Line(game.level.vertices[4], game.level.vertices[5]),
+      front: second
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[5], game.level.vertices[6]),
+      front: second,
+      back: third
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[6], game.level.vertices[7]),
+      front: second
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[7], game.level.vertices[4]),
+      front: second,
+      back: first
+    }),
 
-    new Wall({ line: new Line(game.level.vertices[8], game.level.vertices[9]), front: third }),
-    new Wall({ line: new Line(game.level.vertices[9], game.level.vertices[10]), front: third }),
-    new Wall({ line: new Line(game.level.vertices[10], game.level.vertices[11]), front: third }),
-    new Wall({ line: new Line(game.level.vertices[11], game.level.vertices[8]), front: third, back: second }),
+    new Wall({
+      line: new Line(game.level.vertices[8], game.level.vertices[9]),
+      front: third
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[9], game.level.vertices[10]),
+      front: third
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[10], game.level.vertices[11]),
+      front: third
+    }),
+    new Wall({
+      line: new Line(game.level.vertices[11], game.level.vertices[8]),
+      front: third,
+      back: second
+    })
   )
   first.walls = [
     game.level.walls[0],
@@ -287,7 +362,9 @@ function * EnemyBehaviour(game, x = 0, y = 0) {
   transform.position.x = x
   transform.position.y = y
 
-  const body = game.registry.create(BodyComponent)
+  const body = game.registry.create(BodyComponent, {
+    friction: 0.95
+  })
   const renderable = game.registry.create(FacetedSpriteComponent, {
     sources: [
       game.resources.get('/assets/texture/PLAYA1.png'),
@@ -318,44 +395,48 @@ function * EnemyBehaviour(game, x = 0, y = 0) {
 }
 
 function * PlayerBehaviour(game) {
+  const PlayerSpeed = 0.1
+  const PlayerTurnSpeed = 0.1
+
   const weaponTimer = new Timer()
 
-  const transform = game.registry.create(TransformComponent)
-  this.set('transform', transform)
-
-  const PlayerSpeed = 0.1
-  const body = game.registry.create(BodyComponent)
-  body.collisionMode = CollisionMode.SLIDE
-
-  const view = game.registry.create(ViewComponent)
-  this.set('view', view)
-  this.set('body', body)
+  const transform = this.set(
+    'transform',
+    game.registry.create(TransformComponent)
+  )
+  const view = this.set('view', game.registry.create(ViewComponent))
+  const body = this.set(
+    'body',
+    game.registry.create(BodyComponent, {
+      collisionMode: CollisionMode.SLIDE,
+      friction: 0.95
+    })
+  )
   this.set('listener', game.registry.create(AudioListenerComponent))
 
   const weapon = game.scheduler.create('weapon', game)
-
   while (true)
   {
     if (game.input.stateOf('left')) {
-      transform.rotation -= 0.1
+      transform.rotation -= PlayerTurnSpeed * game.input.stateOf('left')
     } else if (game.input.stateOf('right')) {
-      transform.rotation += 0.1
+      transform.rotation += PlayerTurnSpeed * game.input.stateOf('right')
     }
 
     weapon.walking = false
     if (game.input.stateOf('strafeLeft')) {
-      body.velocity.addScale(transform.direction.clone().perpLeft(), PlayerSpeed)
+      body.velocity.addScale(transform.direction.clone().perpLeft(), PlayerSpeed * game.input.stateOf('strafeLeft'))
       weapon.walking = true
     } else if (game.input.stateOf('strafeRight')) {
-      body.velocity.addScale(transform.direction.clone().perpRight(), PlayerSpeed)
+      body.velocity.addScale(transform.direction.clone().perpRight(), PlayerSpeed * game.input.stateOf('strafeRight'))
       weapon.walking = true
     }
 
     if (game.input.stateOf('forward')) {
-      body.velocity.addScale(transform.direction, PlayerSpeed)
+      body.velocity.addScale(transform.direction, PlayerSpeed * game.input.stateOf('forward'))
       weapon.walking = true
     } else if (game.input.stateOf('backward')) {
-      body.velocity.addScale(transform.direction, -PlayerSpeed)
+      body.velocity.addScale(transform.direction, -PlayerSpeed * game.input.stateOf('backward'))
       weapon.walking = true
     }
 
@@ -380,10 +461,49 @@ function * PlayerBehaviour(game) {
   }
 }
 
+/**
+ * Arma.
+ *
+ * @param {*} game
+ */
 function * WeaponBehaviour(game) {
   // FIXME: Esto no pué ser
   this.bullshit = false
   this.walking = false
+
+  const weapons = [
+    {
+      // Mano
+      sources: [
+        '/assets/weapons/HAND00.png', // idle
+        '/assets/weapons/HAND01.png', // shoot
+        '/assets/weapons/HAND02.png',
+        '/assets/weapons/HAND03.png'
+      ]
+    },
+    {
+      // Pistola
+      sources: [
+        '/assets/weapons/PISTOL00.png', // idle
+        '/assets/weapons/PISTOL01.png', // shoot
+        '/assets/weapons/PISTOL02.png',
+        '/assets/weapons/PISTOL03.png',
+        '/assets/weapons/PISTOL04.png',
+        '/assets/weapons/PISTOL05.png',
+      ]
+    },
+    {
+      // Rocket Launcher
+      sources: [
+        '/assets/weapons/ROCKETL00.png', // idle
+        '/assets/weapons/ROCKETL01.png', // shoot
+        '/assets/weapons/ROCKETL02.png',
+        '/assets/weapons/ROCKETL03.png',
+        '/assets/weapons/ROCKETL04.png',
+        '/assets/weapons/ROCKETL05.png'
+      ]
+    }
+  ]
 
   const transform = game.registry.create(TransformComponent)
   this.set('transform', transform)
@@ -393,8 +513,8 @@ function * WeaponBehaviour(game) {
   // donde debe estar.
   let animationIndex = 0
   const animation = [
-    '/assets/weapons/ROCKETL00.png',
-    '/assets/weapons/ROCKETL01.png',
+    '/assets/weapons/ROCKETL00.png', // idle
+    '/assets/weapons/ROCKETL01.png', // shoot
     '/assets/weapons/ROCKETL02.png',
     '/assets/weapons/ROCKETL03.png',
     '/assets/weapons/ROCKETL04.png',
@@ -417,7 +537,7 @@ function * WeaponBehaviour(game) {
       transform.position.x = 160
       transform.position.y = 240
     }
-    if (timer.elapsed(100) && this.bullshit === true) {
+    if (timer.elapsed(1000 / 30) && this.bullshit === true) {
       animationIndex = (animationIndex + 1) % animation.length
       if (animationIndex === 0) {
         this.bullshit = false

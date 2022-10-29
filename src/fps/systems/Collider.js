@@ -1,13 +1,18 @@
+import EntityComponentRegistry from '../../core/EntityComponentRegistry'
 import BodyComponent from '../components/BodyComponent'
-
-export const CollisionMode = {
-  STOP: 'stop',
-  SLIDE: 'slide',
-  BOUNCE: 'bounce'
-}
+import TransformComponent from '../components/TransformComponent'
+import Level from '../level/Level'
+import CollisionMode from './CollisionMode'
 
 export default class LevelCollider {
+  /**
+   * @type {Level}
+   */
   #level
+
+  /**
+   * @type {EntityComponentRegistry}
+   */
   #registry
 
   constructor({ level, registry }) {
@@ -35,25 +40,20 @@ export default class LevelCollider {
       // TODO: Esto es muy FUERZA BRUTA, necesitamos algún tipo de
       // algoritmo que nos permita tener todo esto agrupado por áreas,
       // quizá con un boundingBox.
-      /*
-      for (const other of state.entities) {
-        if (other === entity) {
+      for (const bodyOther of this.#registry.get(BodyComponent)) {
+        if (body === bodyOther || !bodyOther.entity) {
           continue
         }
-        const otherBody = state.components.bodies.get(other)
-        const otherTransform = state.components.transforms.get(other)
-        if (otherBody) {
-          const d = vec2.distanceBetween(
-            transform.position,
-            otherTransform.position
-          )
-          if (d < body.radius + otherBody.radius) {
-            // TODO: Colisión con entidad.
-            test = true
-          }
+        // TODO: Esto me parece mejor modelo que el actual.
+        // const transformOther = bodyOther.entity.get(TransformComponent)
+        const transformOther = bodyOther.entity.get('transform')
+        const distanceToOther = transform.position.distanceTo(
+          transformOther.position
+        )
+        if (distanceToOther < body.radius + bodyOther.radius) {
+          body.entities.add(bodyOther.entity)
         }
       }
-      */
 
       // Comprobamos si las entidades colisionan con las paredes.
       // Esto quizá podríamos meterlo en una función llamada algo como

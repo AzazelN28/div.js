@@ -71,6 +71,14 @@ export default class Task {
     return this[TaskStateSymbol] === TaskState.RESUMED
   }
 
+  get parent() {
+    return this[TaskParentSymbol]
+  }
+
+  isChild(child) {
+    return this[TaskChildrenSymbol].has(child)
+  }
+
   suspend(tree) {
     this[TaskSignalSymbol] = TaskSignal.SUSPENDED
     if (tree) {
@@ -97,10 +105,10 @@ export default class Task {
   }
 
   onCreate() {
-
+    // TODO:
   }
 
   onDestroy() {
-
+    // TODO:
   }
 }

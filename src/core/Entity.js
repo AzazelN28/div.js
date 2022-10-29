@@ -12,6 +12,7 @@ export default class Entity extends Task {
   set(name, component) {
     component.entity = this
     this.#components.set(name, component)
+    return component
   }
 
   /**

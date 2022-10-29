@@ -1,15 +1,39 @@
 import Scalar from './Scalar'
 
 export default class Vector3 {
+  /**
+   * Distancia entre dos Vector3
+   *
+   * @param {Vector3} a
+   * @param {Vector3} b
+   * @returns {number}
+   */
   static distanceBetween({ x: ax, y: ay, z: az }, { x: bx, y: by, z: bz }) {
     return Math.hypot(ax - bx, ay - by, az - bz)
   }
 
   /**
-   * Punto
+   * Creamos un Vector3 a partir de coordenadas polares.
    *
-   * @param {number} x
-   * @param {number} y
+   * @param {number} angle
+   * @param {number} [length=1]
+   * @param {number} [z=0]
+   * @returns {Vector3}
+   */
+  static fromPolar(angle, length = 1, z = 0) {
+    return new Vector3(
+      Math.cos(angle) * length,
+      Math.sin(angle) * length,
+      z
+    )
+  }
+
+  /**
+   * Punto en el espacio
+   *
+   * @param {number} [x=0]
+   * @param {number} [y=0]
+   * @param {number} [z=0]
    */
   constructor(x = 0, y = 0, z = 0) {
     this.x = x
@@ -26,6 +50,11 @@ export default class Vector3 {
     return Math.hypot(this.x, this.y, this.z)
   }
 
+  /**
+   * Devolvemos si el Vector3 es finito o no.
+   *
+   * @type {boolean}
+   */
   get isFinite() {
     return (
       Number.isFinite(this.x) &&
@@ -34,6 +63,11 @@ export default class Vector3 {
     )
   }
 
+  /**
+   * Devolvemos si el Vector3 es entero o no.
+   *
+   * @type {boolean}
+   */
   get isInteger() {
     return (
       Number.isInteger(this.x) &&
@@ -42,6 +76,14 @@ export default class Vector3 {
     )
   }
 
+  /**
+   * Establecemos las coordenadas.
+   *
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   * @returns {Vector3}
+   */
   set(x, y, z) {
     this.x = x
     this.y = y
@@ -58,7 +100,7 @@ export default class Vector3 {
   }
 
   clone() {
-    return new Point(this.x, this.y, this.z)
+    return new Vector3(this.x, this.y, this.z)
   }
 
   add({ x, y, z }) {

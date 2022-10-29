@@ -2,6 +2,9 @@ export default class Level {
   /**
    * Vértices del nivel.
    *
+   * TODO: Creo que esta propiedad no vale para nada, la podría borrar
+   * tranquilisimamente.
+   *
    * @type {Array<Vertex>}
    */
   #vertices
