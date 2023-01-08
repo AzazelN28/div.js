@@ -26,6 +26,11 @@ export default class FrameCounter {
     this.#framesPerSecond = 0
   }
 
+  /**
+   * Fotogramas por segundo
+   *
+   * @type {number}
+   */
   get framesPerSecond() {
     return this.#framesPerSecond
   }

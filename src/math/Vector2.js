@@ -2,10 +2,24 @@ import Scalar from './Scalar'
 import Interpolation from './Interpolation'
 
 export default class Vector2 {
+  /**
+   * Distancia entre dos vectores.
+   *
+   * @param {Vector2} a
+   * @param {Vector2} b
+   * @returns {number}
+   */
   static distanceBetween({ x: ax, y: ay }, { x: bx, y: by }) {
     return Math.hypot(ax - bx, ay - by)
   }
 
+  /**
+   * Dirección entre dos vectores.
+   *
+   * @param {Vector2} a
+   * @param {Vector2} b
+   * @returns {number}
+   */
   static directionBetween({ x: ax, y: ay }, { x: bx, y: by }) {
     return Math.atan2(ay - by, ax - bx)
   }
@@ -51,6 +65,10 @@ export default class Vector2 {
     this.x = x
     this.y = y
     return this
+  }
+
+  setFromArray([x, y]) {
+    return this.set(x, y)
   }
 
   reset() {

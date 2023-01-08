@@ -4,7 +4,7 @@ import FacetedSprite from './FacetedSprite'
 import ViewComponent from '../components/ViewComponent'
 import Rect from '../../math/Rect'
 import ProgramDefault from './shaders/default'
-import GeometryBufferBuilder from './GeometryBufferBuilder'
+import GeometryBufferBuilder, { TEX_BASE } from './GeometryBufferBuilder'
 import SpriteComponent from '../components/SpriteComponent'
 import Texture from './Texture'
 import Resources from '../../core/Resources'
@@ -15,6 +15,7 @@ import Sector from '../level/Sector'
 import FacetedSpriteComponent from '../components/FacetedSpriteComponent'
 import UISpriteComponent from '../components/UISpriteComponent'
 import UITextComponent from '../components/UITextComponent'
+import Line from '../../math/Line'
 export default class Renderer {
   #canvas
   /**
@@ -70,6 +71,9 @@ export default class Renderer {
     this.#resources = resources
     this.#registry = registry
 
+    // Esto es útil para poder debuggear el renderer.
+    this.debugger = false
+
     const gl = this.#context
 
     // TODO: Todo esto se podría enviar a una función llamada "start"
@@ -106,10 +110,25 @@ export default class Renderer {
     return this.#debug
   }
 
+  /**
+   * Obtiene la textura que necesitamos renderizar.
+   *
+   * @param {string} texture
+   * @returns {WebGLTexture}
+   */
   #getTexture(texture) {
-    return this.#textures.has(texture) ? this.#textures.get(texture) : this.#textures.get('default')
+    return this.#textures.has(texture)
+      ? this.#textures.get(texture)
+      : this.#textures.get('default')
   }
 
+  /**
+   * Renderiza un Wall en un ViewComponent.
+   *
+   * @param {number} time
+   * @param {ViewComponent} view
+   * @param {Wall} wall
+   */
   #renderMaskedWall(time, view, wall) {
     const gl = this.#context
     gl.uniform2f(this.#programInfo.uniforms.u_flip.location, 0, 0)
@@ -118,7 +137,8 @@ export default class Renderer {
       gl.FALSE,
       view.perspectiveView
     )
-
+    // const source = this.#resources.get(ceiling.texture)
+    // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
@@ -132,6 +152,13 @@ export default class Renderer {
     view.renderedWalls++
   }
 
+  /**
+   * Renderiza un FacetedSpriteComponent para un ViewComponent.
+   *
+   * @param {number} time
+   * @param {ViewComponent} view
+   * @param {FacetedSpriteComponent} sprite
+   */
   #renderMaskedFacetedSprite(time, view, sprite) {
     const gl = this.#context
     const viewTransform = view.entity.get('transform')
@@ -143,7 +170,13 @@ export default class Renderer {
       sprite.sources.length
     )
     const source = sprite.sources[sourceIndex]
-    const flipX = sprite?.isResourceful ? (sourceIndex > (sprite.sources.length >> 1) ? 1.0 - sprite.flip.x : sprite.flip.x) : sprite.flip.x
+    const flipX = sprite?.isResourceful
+      ? (
+        sourceIndex > (sprite.sources.length >> 1)
+          ? 1.0 - sprite.flip.x
+          : sprite.flip.x
+        )
+      : sprite.flip.x
     const flipY = sprite.flip.y
 
     vec3.set(
@@ -173,6 +206,10 @@ export default class Renderer {
     )
 
     gl.uniform2f(this.#programInfo.uniforms.u_flip.location, flipX, flipY)
+
+    // const source = this.#resources.get(ceiling.texture)
+    // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
+
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
@@ -186,6 +223,13 @@ export default class Renderer {
     view.renderedMaskedFacetedSprites++
   }
 
+  /**
+   * Renderiza un SpriteComponent para el ViewComponent.
+   *
+   * @param {number} time
+   * @param {ViewComponent} view
+   * @param {SpriteComponent} sprite
+   */
   #renderMaskedSprite(time, view, sprite) {
     const gl = this.#context
     const viewTransform = view.entity.get('transform')
@@ -215,6 +259,10 @@ export default class Renderer {
     )
 
     gl.uniform2f(this.#programInfo.uniforms.u_flip.location, 0, 1)
+
+    // const source = this.#resources.get(ceiling.texture)
+    // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
+
     GLU.setTexture(
       gl,
       this.#programInfo.uniforms.u_sampler.location,
@@ -228,9 +276,20 @@ export default class Renderer {
     view.renderedMaskedSprites++
   }
 
+  /**
+   * Renderizamos los elementos con máscara.
+   *
+   * @param {number} time
+   * @param {ViewComponent} view
+   */
   #renderMaskedSorted(time, view) {
     const gl = this.#context
     const transform = view.entity.get('transform')
+    // Aquí el array "masked" contiene las "paredes con máscara". Así
+    // que lo que podemos hacer es utilizando una lista de "facetedSprites"
+    // y otra de "sprites"
+
+    const combinedMaskedSprites = []
     {
       const facetedSprites = Array.from(this.#registry.get(FacetedSpriteComponent))
       const maskedSprites = facetedSprites
@@ -243,7 +302,7 @@ export default class Renderer {
             distance: distance
           }
         })
-      view.masked.push(...maskedSprites)
+      combinedMaskedSprites.push(...maskedSprites)
     }
     {
       const sprites = Array.from(this.#registry.get(SpriteComponent))
@@ -257,39 +316,28 @@ export default class Renderer {
             distance: distance
           }
         })
-      view.masked.push(...maskedSprites)
+      combinedMaskedSprites.push(...maskedSprites)
     }
 
-    // FIXME: Esto no sirve porque las distancias son "signed" y además
-    // la pared de referencia es MUY importante.
-    /*
-    const refMaskedWall = view.masked.find((masked) => masked.object instanceof Wall && masked.distance >= 0)
-    if (refMaskedWall) {
-      view.masked.forEach((masked) => {
-        if (masked.object instanceof Wall) {
-          return
+    // En view.masked en este punto tenemos las paredes, si en este punto "view.masked" es diferente
+    // de 0 significa que tenemos paredes "enmascaradas" por renderizar y necesitamos comprobar si
+    // las paredes enmascaradas intersectan con los rayos lanzados desde la vista a los "combinedMaskedSprites".
+    // Si intersectan significa que tenemos que recalcular las distancias utilizando esos puntos
+    // de intersección.
+    if (view.masked.length > 0) {
+      for (const maskedSprite of combinedMaskedSprites) {
+        const spriteTransform = maskedSprite.object.entity.get('transform')
+        const line = new Line(transform.position, spriteTransform.position)
+        for (const maskedWall of view.masked) {
+          const intersectionPoint = line.intersect(maskedWall.object.line)
+          if (intersectionPoint.isFinite) {
+            maskedWall.distance = intersectionPoint.distanceTo(transform.position)
+          }
         }
-        const transform = masked.object.entity.get('transform')
-        const distanceToWall = refMaskedWall.object.line.distance(transform.position)
-        const newDistance = refMaskedWall.distance - distanceToWall
-
-        masked.distance = newDistance
-      })
+      }
     }
-    */
-    view.masked.forEach((masked) => {
-      if (masked.object instanceof Wall) {
-        return
-      }
 
-      const transform = masked.object.entity.get('transform')
-      const refMaskedWall = view.masked.find((masked) => masked.object instanceof Wall && masked.distance >= 0 && masked.object.line.distance(transform.position) < 0)
-      if (refMaskedWall) {
-        const distanceToWall = refMaskedWall.object.line.distance(transform.position)
-        const newDistance = refMaskedWall.distance - distanceToWall
-        masked.distance = newDistance
-      }
-    })
+    view.masked.push(...combinedMaskedSprites)
 
     const sortedMasked = view.masked.sort((a, b) => b.distance - a.distance)
     for (const masked of sortedMasked) {
@@ -316,19 +364,9 @@ export default class Renderer {
     // view.maskedWalls.length = 0
     view.masked.length = 0
 
-    gl.uniform2f(this.#programInfo.uniforms.u_flip.location, 0, 0)
+    GLU.setUniform(gl, this.#programInfo.uniforms.u_flip, 0, 0)
 
     const transform = view.entity.get('transform')
-    /*
-    const wallDistances = Array.from(view.walls).map((wall) => {
-      const distance = wall.line.distance(transform.position)
-      return {
-        wall,
-        distance
-      }
-    })
-    const sortedWalls = wallDistances.sort((a, b) => b.distance - a.distance)
-    */
 
     // TODO: Esto lo podemos renderizar utilizando la distancia
     // de la pared a la vista de tal forma que siempre podemos
@@ -344,6 +382,10 @@ export default class Renderer {
             this.#getTexture(wall.bottom.texture),
             0
           )
+
+          // const source = this.#resources.get(wall.bottom.texture)
+          // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
+
           const { buffer } = this.#buffers.get(wall.bottom)
           GLU.drawQuad(gl, buffer)
           GLU.unsetTexture(gl)
@@ -353,10 +395,12 @@ export default class Renderer {
 
         if (wall.middle.texture) {
           const distance = wall.line.distance(transform.position)
-          view.masked.push({
-            object: wall,
-            distance
-          })
+          if (distance > 0) {
+            view.masked.push({
+              object: wall,
+              distance
+            })
+          }
         }
 
         if (wall.top.texture) {
@@ -366,6 +410,10 @@ export default class Renderer {
             this.#getTexture(wall.top.texture),
             0
           )
+
+          // const source = this.#resources.get(wall.top.texture)
+          // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
+
           const { buffer } = this.#buffers.get(wall.top)
           GLU.drawQuad(gl, buffer)
           GLU.unsetTexture(gl)
@@ -380,6 +428,10 @@ export default class Renderer {
           this.#getTexture(wall.middle.texture),
           0
         )
+
+        // const source = this.#resources.get(wall.middle.texture)
+        // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
+
         const { buffer } = this.#buffers.get(wall.middle)
         GLU.drawQuad(gl, buffer)
         GLU.unsetTexture(gl)
@@ -412,6 +464,8 @@ export default class Renderer {
       // gl.uniform3f(this.#programInfo.uniforms.u_color.location, 1, 0, 1)
       if (floor.texture) {
         GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#getTexture(floor.texture), 0)
+        // const source = this.#resources.get(floor.texture)
+        // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
         const { buffer, count } = this.#buffers.get(floor)
         GLU.drawPoly(gl, buffer, count)
         GLU.unsetTexture(gl)
@@ -422,6 +476,8 @@ export default class Renderer {
       // gl.uniform3f(this.#programInfo.uniforms.u_color.location, 0.5, 0, 0.5)
       if (ceiling.texture) {
         GLU.setTexture(gl, this.#programInfo.uniforms.u_sampler.location, this.#getTexture(ceiling.texture), 0)
+        // const source = this.#resources.get(ceiling.texture)
+        // GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
         const { buffer, count } = this.#buffers.get(ceiling)
         GLU.drawPoly(gl, buffer, count)
         GLU.unsetTexture(gl)
@@ -515,6 +571,8 @@ export default class Renderer {
       gl.FALSE,
       view.perspectiveView
     )
+
+    GLU.setUniform(gl, this.#programInfo.uniforms.u_texsize, 1, 1)
 
     this.#renderWalls(time, view)
     this.#renderSectors(time, view)

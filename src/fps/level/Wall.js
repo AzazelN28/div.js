@@ -3,7 +3,7 @@ import Line from '../../math/Line'
 
 class WallPart {
   constructor() {
-    this.texture = '/assets/texture/WALL30_4.png'
+    this.texture = null // '/assets/texture/WALL30_4.png'
     this.textureOffset = new Vector2()
   }
 }

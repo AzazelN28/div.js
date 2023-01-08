@@ -58,7 +58,11 @@ export default class Task {
   }
 
   get isRunning() {
-    return [TaskState.CREATED, TaskState.UPDATED, TaskState.RESUMED].includes(
+    return [
+      TaskState.CREATED,
+      TaskState.UPDATED,
+      TaskState.RESUMED
+    ].includes(
       this[TaskStateSymbol]
     )
   }

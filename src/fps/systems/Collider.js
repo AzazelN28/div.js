@@ -4,6 +4,10 @@ import TransformComponent from '../components/TransformComponent'
 import Level from '../level/Level'
 import CollisionMode from './CollisionMode'
 
+/**
+ * Este sistema se encarga de comprobar las colisiones entre las entidades
+ * y el nivel.
+ */
 export default class LevelCollider {
   /**
    * @type {Level}
@@ -116,7 +120,7 @@ export default class LevelCollider {
             (body.stepSize ?? 0)
           ) {
             body.sector = wall.back
-            if (nextSector.floor.height - transform.position.z > 0) {
+            if (nextSector.floor.height > transform.position.z) {
               transform.position.z = nextSector.floor.height
             }
             continue

@@ -1,10 +1,6 @@
 import './style.css'
 import ResizeMode from './canvas/ResizeMode'
 import Game from './Game'
-import Vector2 from './math/Vector2'
-import Line from './math/Line'
-import Wall from './fps/level/Wall'
-import Sector from './fps/level/Sector'
 import Timer from './core/Timer'
 
 import TransformComponent from './fps/components/TransformComponent'
@@ -70,11 +66,7 @@ const game = new Game({
 window.game = game
 
 function * ExplosionBehaviour(game, parentTransform) {
-  const animation = [
-    '/assets/weapons/ROCKETEXP00.png',
-    '/assets/weapons/ROCKETEXP01.png',
-    '/assets/weapons/ROCKETEXP02.png'
-  ]
+  const animation = game.resources.sequence('/assets/weapons/ROCKETEXP%02d.png', 2)
   const emitter = this.set('emitter', game.registry.create(AudioEmitterComponent, {
     buffer: game.resources.get('/assets/sfx/DSBAREXP.wav'),
     start: true,
@@ -109,10 +101,12 @@ function * ExplosionBehaviour(game, parentTransform) {
 function * ProjectileBehaviour(game, parentTransform) {
   const transform = game.registry.create(TransformComponent)
   transform.position.copy(parentTransform.position)
+  transform.position.z += 16
   transform.rotation = parentTransform.rotation
 
   const body = game.registry.create(BodyComponent, {
     velocity: Vector3.fromPolar(transform.rotation, 10),
+    stepSize: 0,
     gravity: 0,
     friction: 1
   })
@@ -130,8 +124,8 @@ function * ProjectileBehaviour(game, parentTransform) {
     ]
   })
   renderable.flip.x = 1
-  this.set('transform', transform)
   this.set('body', body)
+  this.set('transform', transform)
   this.set('renderable', renderable)
 
   let shouldStop = false
@@ -153,6 +147,11 @@ function * ProjectileBehaviour(game, parentTransform) {
         if (wall.isSingleSided) {
           shouldStop = true
           break
+        } else if (wall.isDoubleSided
+          && (transform.position.z < wall.back.floor.height
+           || transform.position.z > wall.back.ceiling.height)) {
+          shouldStop = true
+          break
         }
       }
     }
@@ -169,188 +168,40 @@ async function * LevelBehaviour(game) {
   // game.audio.music.play(game.resources.get('/assets/music/goof.mp3'))
   await Promise.all([
     game.resources.load('/assets/texture/SLIME15.png'),
-    game.resources.load('/assets/texture/WALL30_4.png'),
+    game.resources.load('/assets/texture/WALL40_1.png'),
     game.resources.load('/assets/texture/M1_1.png'),
     game.resources.load('/assets/texture/PLAYA1.png'),
     game.resources.load('/assets/texture/PLAYA2A8.png'),
     game.resources.load('/assets/texture/PLAYA3A7.png'),
     game.resources.load('/assets/texture/PLAYA4A6.png'),
     game.resources.load('/assets/texture/PLAYA5.png'),
-    game.resources.load('/assets/weapons/HAND00.png'),
-    game.resources.load('/assets/weapons/HAND01.png'),
-    game.resources.load('/assets/weapons/HAND02.png'),
-    game.resources.load('/assets/weapons/HAND03.png'),
-    game.resources.load('/assets/weapons/CHAINSAW00.png'),
-    game.resources.load('/assets/weapons/CHAINSAW01.png'),
-    game.resources.load('/assets/weapons/CHAINSAW02.png'),
-    game.resources.load('/assets/weapons/CHAINSAW03.png'),
-    game.resources.load('/assets/weapons/PISTOL00.png'),
-    game.resources.load('/assets/weapons/PISTOL01.png'),
-    game.resources.load('/assets/weapons/PISTOL02.png'),
-    game.resources.load('/assets/weapons/PISTOL03.png'),
-    game.resources.load('/assets/weapons/PISTOL04.png'),
-    game.resources.load('/assets/weapons/PISTOL05.png'),
-    game.resources.load('/assets/weapons/SHOTGUN00.png'),
-    game.resources.load('/assets/weapons/SHOTGUN01.png'),
-    game.resources.load('/assets/weapons/SHOTGUN02.png'),
-    game.resources.load('/assets/weapons/SHOTGUN03.png'),
-    game.resources.load('/assets/weapons/SHOTGUN04.png'),
-    game.resources.load('/assets/weapons/SHOTGUN05.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN00.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN01.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN02.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN03.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN04.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN05.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN06.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN07.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN08.png'),
-    game.resources.load('/assets/weapons/SSHOTGUN09.png'),
-    game.resources.load('/assets/weapons/CHAINGUN00.png'),
-    game.resources.load('/assets/weapons/CHAINGUN01.png'),
-    game.resources.load('/assets/weapons/CHAINGUN02.png'),
-    game.resources.load('/assets/weapons/CHAINGUN03.png'),
-    game.resources.load('/assets/weapons/ROCKETL00.png'),
-    game.resources.load('/assets/weapons/ROCKETL01.png'),
-    game.resources.load('/assets/weapons/ROCKETL02.png'),
-    game.resources.load('/assets/weapons/ROCKETL03.png'),
-    game.resources.load('/assets/weapons/ROCKETL04.png'),
-    game.resources.load('/assets/weapons/ROCKETL05.png'),
+    game.resources.loadSequence('/assets/weapons/HAND03.png', 3),
+    game.resources.loadSequence('/assets/weapons/CHAINSAW%02d.png', 3),
+    game.resources.loadSequence('/assets/weapons/PISTOL%02d.png', 5),
+    game.resources.loadSequence('/assets/weapons/SHOTGUN%02d.png', 5),
+    game.resources.loadSequence('/assets/weapons/SSHOTGUN%02d.png', 9),
+    game.resources.loadSequence('/assets/weapons/CHAINGUN%02d.png', 3),
+    game.resources.loadSequence('/assets/weapons/ROCKETL%02d.png', 5),
     game.resources.load('/assets/weapons/ROCKET_F.png'),
     game.resources.load('/assets/weapons/ROCKETFS.png'),
     game.resources.load('/assets/weapons/ROCKET_S.png'),
     game.resources.load('/assets/weapons/ROCKETRS.png'),
     game.resources.load('/assets/weapons/ROCKET_R.png'),
-    game.resources.load('/assets/weapons/ROCKETEXP00.png'),
-    game.resources.load('/assets/weapons/ROCKETEXP01.png'),
-    game.resources.load('/assets/weapons/ROCKETEXP02.png'),
-    game.resources.load('/assets/weapons/PLASMA00.png'),
-    game.resources.load('/assets/weapons/PLASMA01.png'),
-    game.resources.load('/assets/weapons/PLASMA02.png'),
-    game.resources.load('/assets/weapons/PLASMA03.png'),
-    game.resources.load('/assets/weapons/BFG00.png'),
-    game.resources.load('/assets/weapons/BFG01.png'),
-    game.resources.load('/assets/weapons/BFG02.png'),
-    game.resources.load('/assets/weapons/BFG03.png'),
-    game.resources.load('/assets/weapons/BFG04.png'),
+    game.resources.loadSequence('/assets/weapons/ROCKETEXP%02d.png', 2),
+    game.resources.loadSequence('/assets/weapons/PLASMA%02d.png', 3),
+    game.resources.loadSequence('/assets/weapons/BFG%02d.png', 4),
     game.resources.load('/assets/ambient/UB03-005 1.mp3'),
     game.resources.load('/assets/sfx/DSRLAUNC.wav'),
-    game.resources.load('/assets/sfx/DSBAREXP.wav')
+    game.resources.load('/assets/sfx/DSBAREXP.wav'),
+    game.resources.load('/assets/level/test.json')
   ])
 
-  // game.setMode({ mode: ResizeMode.FILL, scale: 0.5 })
-  const first = new Sector()
-  const second = new Sector()
-  const third = new Sector()
-  game.level.vertices.push(
-    new Vector2(-64, -64),
-    new Vector2(64, -64),
-    new Vector2(64, 64),
-    new Vector2(-64, 64),
+  game.level.from(game.resources.get('/assets/level/test.json'))
 
-    new Vector2(64, -64),
-    new Vector2(192, -128),
-    new Vector2(192, 128),
-    new Vector2(64, 64),
-
-    new Vector2(192, -128),
-    new Vector2(320, -128),
-    new Vector2(320, 128),
-    new Vector2(192, 128)
-  )
-  game.level.walls.push(
-    new Wall({
-      line: new Line(game.level.vertices[0], game.level.vertices[1]),
-      front: first
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[1], game.level.vertices[2]),
-      front: first,
-      back: second
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[2], game.level.vertices[3]),
-      front: first
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[3], game.level.vertices[0]),
-      front: first
-    }),
-
-    new Wall({
-      line: new Line(game.level.vertices[4], game.level.vertices[5]),
-      front: second
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[5], game.level.vertices[6]),
-      front: second,
-      back: third
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[6], game.level.vertices[7]),
-      front: second
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[7], game.level.vertices[4]),
-      front: second,
-      back: first
-    }),
-
-    new Wall({
-      line: new Line(game.level.vertices[8], game.level.vertices[9]),
-      front: third
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[9], game.level.vertices[10]),
-      front: third
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[10], game.level.vertices[11]),
-      front: third
-    }),
-    new Wall({
-      line: new Line(game.level.vertices[11], game.level.vertices[8]),
-      front: third,
-      back: second
-    })
-  )
-  first.walls = [
-    game.level.walls[0],
-    game.level.walls[1],
-    game.level.walls[2],
-    game.level.walls[3]
-  ]
-  first.floor.height = 8
-  first.ceiling.height = 64
-  second.walls = [
-    game.level.walls[4],
-    game.level.walls[5],
-    game.level.walls[6],
-    game.level.walls[7]
-  ]
-  second.floor.height = 4
-  second.ceiling.height = 72
-  third.walls = [
-    game.level.walls[8],
-    game.level.walls[9],
-    game.level.walls[10],
-    game.level.walls[11]
-  ]
-  third.floor.height = 0
-  third.ceiling.height = 96
-
-  game.level.walls[1].middle.texture = '/assets/texture/M1_1.png'
-  game.level.walls[5].middle.texture = '/assets/texture/M1_1.png'
-  game.level.walls[7].middle.texture = '/assets/texture/M1_1.png'
-  game.level.walls[11].middle.texture = '/assets/texture/M1_1.png'
-
-  game.level.sectors.push(first, second, third)
-  game.level.compute()
-
-  game.scheduler.create('enemy', game)
-  game.scheduler.create('enemy', game, 64, 64)
-  game.scheduler.create('enemy', game, 128, 64)
-  game.scheduler.create('player', game)
+  const { spawns } = game.resources.get('/assets/level/test.json')
+  for (const spawn of spawns) {
+    game.scheduler.create(spawn.type, game, ...spawn.args)
+  }
 
   while (true) {
     yield // frame;
@@ -366,16 +217,16 @@ function * EnemyBehaviour(game, x = 0, y = 0) {
     friction: 0.95
   })
   const renderable = game.registry.create(FacetedSpriteComponent, {
-    sources: [
-      game.resources.get('/assets/texture/PLAYA1.png'),
-      game.resources.get('/assets/texture/PLAYA2A8.png'),
-      game.resources.get('/assets/texture/PLAYA3A7.png'),
-      game.resources.get('/assets/texture/PLAYA4A6.png'),
-      game.resources.get('/assets/texture/PLAYA5.png'),
-      game.resources.get('/assets/texture/PLAYA4A6.png'),
-      game.resources.get('/assets/texture/PLAYA3A7.png'),
-      game.resources.get('/assets/texture/PLAYA2A8.png')
-    ]
+    sources: game.resources.getAll([
+      'PLAYA1.png',
+      'PLAYA2A8.png',
+      'PLAYA3A7.png',
+      'PLAYA4A6.png',
+      'PLAYA5.png',
+      'PLAYA4A6.png',
+      'PLAYA3A7.png',
+      'PLAYA2A8.png'
+    ], '/assets/texture/')
   })
   const emitter = game.registry.create(AudioEmitterComponent, {
     buffer: game.resources.get('/assets/ambient/UB03-005 1.mp3'),
@@ -409,6 +260,7 @@ function * PlayerBehaviour(game) {
     'body',
     game.registry.create(BodyComponent, {
       collisionMode: CollisionMode.SLIDE,
+      gravity: 0.1,
       friction: 0.95
     })
   )
@@ -453,7 +305,7 @@ function * PlayerBehaviour(game) {
     }
 
     if (game.input.stateOf('jump') && body.isOnGround) {
-      body.velocity.z = 5
+      body.velocity.z = 4
     }
 
     // document.title = `${view.renderedWalls} ${view.renderedPlanes}`
@@ -474,34 +326,35 @@ function * WeaponBehaviour(game) {
   const weapons = [
     {
       // Mano
-      sources: [
-        '/assets/weapons/HAND00.png', // idle
-        '/assets/weapons/HAND01.png', // shoot
-        '/assets/weapons/HAND02.png',
-        '/assets/weapons/HAND03.png'
-      ]
+      sources: game.resources.sequence('/assets/weapons/HAND%02d.png', 3)
     },
     {
       // Pistola
-      sources: [
-        '/assets/weapons/PISTOL00.png', // idle
-        '/assets/weapons/PISTOL01.png', // shoot
-        '/assets/weapons/PISTOL02.png',
-        '/assets/weapons/PISTOL03.png',
-        '/assets/weapons/PISTOL04.png',
-        '/assets/weapons/PISTOL05.png',
-      ]
+      sources: game.resources.sequence('/assets/weapons/PISTOL%02d.png', 5)
+    },
+    {
+      // Escopeta
+      sources: game.resources.sequence('/assets/weapons/SHOTGUN%02d.png', 5)
+    },
+    {
+      // Super escopeta
+      sources: game.resources.sequence('/assets/weapons/SSHOTGUN%02d.png', 9)
+    },
+    {
+      // Ametralladora
+      sources: game.resources.sequence('/assets/weapons/CHAINGUN%02d.png', 3)
     },
     {
       // Rocket Launcher
-      sources: [
-        '/assets/weapons/ROCKETL00.png', // idle
-        '/assets/weapons/ROCKETL01.png', // shoot
-        '/assets/weapons/ROCKETL02.png',
-        '/assets/weapons/ROCKETL03.png',
-        '/assets/weapons/ROCKETL04.png',
-        '/assets/weapons/ROCKETL05.png'
-      ]
+      sources: game.resources.sequence('/assets/weapons/ROCKETL%02d.png', 5)
+    },
+    {
+      // Cañón de plasma
+      sources: game.resources.sequence('/assets/weapons/PLASMA%02d.png', 3)
+    },
+    {
+      // BFG
+      sources: game.resources.sequence('/assets/weapons/BFG%02d.png', 4)
     }
   ]
 
@@ -512,14 +365,7 @@ function * WeaponBehaviour(game) {
   // como en DIV para hacer que la animación salga exactamente
   // donde debe estar.
   let animationIndex = 0
-  const animation = [
-    '/assets/weapons/ROCKETL00.png', // idle
-    '/assets/weapons/ROCKETL01.png', // shoot
-    '/assets/weapons/ROCKETL02.png',
-    '/assets/weapons/ROCKETL03.png',
-    '/assets/weapons/ROCKETL04.png',
-    '/assets/weapons/ROCKETL05.png',
-  ]
+  const animation = game.resources.sequence('/assets/weapons/ROCKETL%02d.png', 5)
   const renderable = game.registry.create(UISpriteComponent, {
     source: game.resources.get('/assets/weapons/ROCKETL00.png')
   })

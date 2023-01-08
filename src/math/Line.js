@@ -64,19 +64,47 @@ export default class Line {
     return param >= min && param <= max
   }
 
-  denominator(a, b) {
+  denominator(line) {
     // return (ax - bx) * (cy - dy) - (ay - by) * (cx - dx)
-    return a.dx * b.dy - a.dy * b.dx
+    return this.dx * line.dy - this.dy * line.dx
   }
 
-  intersection(a, b, out = new Vector2()) {
-    const denom = this.denominator(a, b)
+  // TODO: No me gusta este nombre, tengo que ver qué hago
+  // con él.
+  intersect(line, out = new Vector2()) {
+    const denom = this.denominator(line)
     if (Scalar.almostEqual(denom, 0)) {
       return out.set(Infinity, Infinity)
     }
 
-    const { sx: ax, sy: ay, ex: bx, ey: by } = a
-    const { sx: cx, sy: cy, ex: dx, ey: dy } = b
+    const { sx: ax, sy: ay, ex: bx, ey: by } = this
+    const { sx: cx, sy: cy, ex: dx, ey: dy } = line
+
+    const u = ((ax - cx) * (cy - dy) - (ay - cy) * (cx - dx)) / denom
+    const v = ((ax - cx) * (ay - by) - (ay - cy) * (ax - bx)) / denom
+
+    if (Number.isFinite(u)) {
+      return out.set(
+        Interpolation.linear(u, ax, bx),
+        Interpolation.linear(u, ay, by)
+      )
+    } else if (Number.isFinite(v)) {
+      return out.set(
+        Interpolation.linear(v, cx, dx),
+        Interpolation.linear(v, cy, dy)
+      )
+    }
+    return out.set(Infinity, Infinity)
+  }
+
+  intersection(line, out = new Vector2()) {
+    const denom = this.denominator(line)
+    if (Scalar.almostEqual(denom, 0)) {
+      return out.set(Infinity, Infinity)
+    }
+
+    const { sx: ax, sy: ay, ex: bx, ey: by } = this
+    const { sx: cx, sy: cy, ex: dx, ey: dy } = line
 
     const u = ((ax - cx) * (cy - dy) - (ay - cy) * (cx - dx)) / denom
     const v = ((ax - cx) * (ay - by) - (ay - cy) * (ax - bx)) / denom

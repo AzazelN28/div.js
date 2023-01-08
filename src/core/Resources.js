@@ -7,7 +7,7 @@ export default class Resources {
   #baseURL
 
   /**
-   * Recursos cargados
+   * Recursos cargados.
    *
    * @type {Map<string,*>}
    */
@@ -54,6 +54,10 @@ export default class Resources {
     return this.#resources.get(url)
   }
 
+  getAll(urls, baseURL) {
+    return urls.map((url) => this.#resources.get(baseURL ? baseURL + url : url))
+  }
+
   has(url) {
     return this.#resources.has(url)
   }
@@ -64,6 +68,37 @@ export default class Resources {
 
   delete(url) {
     this.#resources.delete(url)
+  }
+
+  /**
+   * Genera una secuencia de cadenas.
+   *
+   * NOTA: No sé si este es el lugar
+   * más apropiado para esto.
+   *
+   * @param {string} template
+   * @param {number} end
+   * @param {number} [start=0]
+   * @param {number} [step=1]
+   * @returns {Array<string>}
+   */
+  sequence(template, end, start = 0, step = 1) {
+    const sequence = []
+    for (let index = start; index <= end; index += step) {
+      sequence.push(
+        template.replace(/%([A-Za-z0-9_])([0-9]+)d/g, (_, padding, count) =>
+          index.toString().padStart(count, padding)
+        )
+      )
+    }
+    return sequence
+  }
+
+  async loadSequence(templateUrl, end, start = 0, step = 1) {
+    return Promise.all(
+      this.sequence(templateUrl, end, start, step)
+          .map((url) => this.load(url))
+    )
   }
 
   async load(url) {

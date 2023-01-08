@@ -4,7 +4,7 @@ import Vector2 from '../../math/Vector2'
 export class SectorPlane {
   constructor() {
     this.height = 0
-    this.texture = '/assets/texture/SLIME15.png'
+    this.texture = null // '/assets/texture/SLIME15.png'
     this.textureOffset = new Vector2()
   }
 }
@@ -21,6 +21,10 @@ export default class Sector {
     this.walls = walls
   }
 
+  /**
+   * Calcula el bounding box del sector a partir
+   * de los vertices de las paredes.
+   */
   compute() {
     this.boundingBox.envelopStart()
     for (const wall of this.walls) {
