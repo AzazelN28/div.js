@@ -1,6 +1,7 @@
 /**
+ * Añade múltiples event listeners a un elemento objetivo.
  *
- * @param {*} target
+ * @param {EventTarget} target
  * @param {Array<string>} types
  * @param {Function} listener
  */
@@ -9,8 +10,9 @@ export function addEventListeners(target, types, listener) {
 }
 
 /**
+ * Elimina múltiples event listeners de un elemento objetivo.
  *
- * @param {*} target
+ * @param {EventTarget} target
  * @param {Array<string>} types
  * @param {Function} listener
  */

@@ -1,5 +1,12 @@
 import { addEventListeners } from '../event/Helper'
 
+/**
+ * Devuelve el valor indicado si supera el umbral.
+ *
+ * @param {number} value Valor
+ * @param {number} threshold Umbral
+ * @returns {number} Valor
+ */
 export function isActive(value, threshold) {
   if (Math.abs(value) > Math.abs(threshold)
     && Math.sign(value) === Math.sign(threshold)) {
@@ -8,21 +15,27 @@ export function isActive(value, threshold) {
   return 0
 }
 
+/**
+ * Gamepads
+ */
 export default class Gamepads {
   /**
-   * Lista de gamepads
+   * Lista de gamepads.
    *
    * @type {Array<Gamepad>}
    */
   #gamepads
 
   /**
-   * Número de gamepads conectados
+   * Número de gamepads conectados.
    *
    * @type {number}
    */
   #connected
 
+  /**
+   * Constructor
+   */
   constructor() {
     this.#gamepads = null
     this.#connected = 0

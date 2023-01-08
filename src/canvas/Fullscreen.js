@@ -1,16 +1,34 @@
 import { addEventListeners, removeEventListeners } from '../event/Helper'
 
 export default class Fullscreen {
+  /**
+   * Elemento objetivo
+   *
+   * @type {HTMLElement}
+   */
   #target
 
+  /**
+   * Constructor
+   *
+   * @param {HTMLElement} target
+   */
   constructor(target) {
     this.#target = target
   }
 
+  /**
+   * Indica si está activo el fullscreen.
+   *
+   * @type {boolean}
+   */
   get isEnabled() {
     return document.fullscreenEnabled
   }
 
+  /**
+   *
+   */
   get isOn() {
     return !!document.fullscreenElement
   }

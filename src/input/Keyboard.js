@@ -15,6 +15,11 @@ export default class Keyboard {
    */
   #target
 
+  /**
+   * Constructor
+   *
+   * @param {HTMLElement} [target=window]
+   */
   constructor(target = window) {
     this.#target = target
     this.#keys = new Map()

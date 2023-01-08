@@ -1,3 +1,13 @@
+/**
+ * Número de milisegundos que hay en un segundo.
+ *
+ * @constant {number}
+ */
+const SECOND_MS = 1000
+
+/**
+ * Contador de fotogramas.
+ */
 export default class FrameCounter {
   /**
    * Número de fotogramas.
@@ -35,9 +45,14 @@ export default class FrameCounter {
     return this.#framesPerSecond
   }
 
+  /**
+   * Actualiza el contador de fotogramas.
+   *
+   * @param {number} time
+   */
   update(time) {
     this.#frameCount++
-    if (time - this.#startTime >= 1000) {
+    if (time - this.#startTime >= SECOND_MS) {
       this.#startTime = time
       this.#framesPerSecond = this.#frameCount
       this.#frameCount = 0

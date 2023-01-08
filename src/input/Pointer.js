@@ -45,6 +45,11 @@ export default class Pointer {
   #isInside
   #type
 
+  /**
+   * Constructor
+   *
+   * @param {HTMLElement|document|window} [target=window]
+   */
   constructor(target = window) {
     this.#target = target
     this.#buttons = new Map()

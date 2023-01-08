@@ -53,10 +53,20 @@ export default class Vector2 {
     return Math.atan2(this.y, this.x)
   }
 
+  /**
+   * Indica si el vector es "finito"
+   *
+   * @type {boolean}
+   */
   get isFinite() {
     return Number.isFinite(this.x) && Number.isFinite(this.y)
   }
 
+  /**
+   * Indica si el vector es "entero"
+   *
+   * @type {boolean}
+   */
   get isInteger() {
     return Number.isInteger(this.x) && Number.isInteger(this.y)
   }

@@ -16,17 +16,37 @@ import Visibility from './fps/systems/Visibility'
 
 export default class Game {
   /**
-   * Input
+   * Entrada
+   *
+   * @type {Input}
    */
   #input
 
   /**
    * Core
+   *
+   * @type {Loop}
    */
   #loop
+
+  /**
+   * @type {Scheduler}
+   */
   #scheduler
+
+  /**
+   * @type {EntityComponentRegistry}
+   */
   #registry
+
+  /**
+   * @type {Resources}
+   */
   #resources
+
+  /**
+   * @type {Collider}
+   */
   #collider
 
   /**

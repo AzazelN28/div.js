@@ -1,3 +1,7 @@
+
+/**
+ * Registro de componentes.
+ */
 export default class EntityComponentRegistry {
   #byConstructor = new Map()
 
@@ -29,6 +33,11 @@ export default class EntityComponentRegistry {
     this.unregister(component)
   }
 
+  /**
+   *
+   * @param {EntityComponent} component
+   * @returns
+   */
   register(component) {
     if (!this.#byConstructor.has(component.constructor)) {
       this.#byConstructor.set(component.constructor, new Set())
@@ -37,6 +46,11 @@ export default class EntityComponentRegistry {
     return components.add(component)
   }
 
+  /**
+   *
+   * @param {EntityComponent} component
+   * @returns
+   */
   unregister(component) {
     if (!this.#byConstructor.has(component.constructor)) {
       throw new Error(`Constructor ${component.constructor} wasn't registered`)

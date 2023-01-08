@@ -1,3 +1,11 @@
+/**
+ * @typedef {object} ResourcesConstructorOptions
+ * @property {string|URL} [baseURL=location.href]
+ */
+
+/**
+ * Resources
+ */
 export default class Resources {
   /**
    * Base URL.
@@ -21,12 +29,24 @@ export default class Resources {
   #loading
 
   /**
+   * Errores
+   *
    * @type {Map<string, Error>}
    */
   #error
 
+  /**
+   * Promesas
+   *
+   * @type {Map<string, Promise>}
+   */
   #promises
 
+  /**
+   * Constructor
+   *
+   * @param {ResourcesConstructorOptions} param0
+   */
   constructor({ baseURL = location.href } = {}) {
     this.#baseURL = baseURL
     this.#loading = new Map()
@@ -35,10 +55,21 @@ export default class Resources {
     this.#resources = new Map()
   }
 
+  /**
+   * Número de elementos que se están cargando.
+   *
+   * @type {number}
+   */
   get loading() {
     return this.#loading.size
   }
 
+  /**
+   * Carga o devuelve un recurso a partir de una URL.
+   *
+   * @param {string|URL} url
+   * @returns {Promise<any, Error>}
+   */
   async getOrLoad(url) {
     if (this.#resources.has(url)) {
       return this.#resources.get(url)
@@ -50,22 +81,52 @@ export default class Resources {
     return this.load(url)
   }
 
+  /**
+   * Devuelve un recurso ya cargado a partir de su URL.
+   *
+   * @param {string|URL} url
+   * @returns {any}
+   */
   get(url) {
     return this.#resources.get(url)
   }
 
+  /**
+   * Devuelve todos los recursos indicados.
+   *
+   * @param {Array<string|URL>} urls
+   * @param {string|URL} baseURL
+   * @returns {Array<any>}
+   */
   getAll(urls, baseURL) {
     return urls.map((url) => this.#resources.get(baseURL ? baseURL + url : url))
   }
 
+  /**
+   * Devuelve si el recurso existe.
+   *
+   * @param {string|URL} url
+   * @returns {boolean}
+   */
   has(url) {
     return this.#resources.has(url)
   }
 
+  /**
+   * Guarda un recurso con la URL indicada.
+   *
+   * @param {string|URL} url
+   * @param {any} data
+   */
   set(url, data) {
     this.#resources.set(url, data)
   }
 
+  /**
+   * Borra un recurso.
+   *
+   * @param {string|URL} url
+   */
   delete(url) {
     this.#resources.delete(url)
   }
@@ -94,6 +155,15 @@ export default class Resources {
     return sequence
   }
 
+  /**
+   * Carga una secuencia de URLs.
+   *
+   * @param {string} templateUrl Plantilla de URL
+   * @param {number} end Final
+   * @param {number} [start=0] Inicio
+   * @param {number} [step=1] Paso
+   * @returns {Promise}
+   */
   async loadSequence(templateUrl, end, start = 0, step = 1) {
     return Promise.all(
       this.sequence(templateUrl, end, start, step)
@@ -101,6 +171,12 @@ export default class Resources {
     )
   }
 
+  /**
+   * Carga un recurso a partir de su URL.
+   *
+   * @param {string|URL} url
+   * @returns {Promise<any, Error>}
+   */
   async load(url) {
     this.#loading.set(url, new Promise((resolve, reject) => this.#promises.set(url, { resolve, reject })))
     try {

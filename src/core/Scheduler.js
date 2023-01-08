@@ -11,28 +11,41 @@ import {
 import TaskSignal from './TaskSignal'
 import TaskState from './TaskState'
 
+/**
+ * Scheduler
+ */
 export default class Scheduler {
   /**
+   * Generadores
+   *
    * @type {Map<string, Iterator>}
    */
   #generators
 
   /**
+   * Iteradores
+   *
    * @type {Map<Task, Iterator>}
    */
   #iterators
 
   /**
+   * Tareas por tipo
+   *
    * @type {Map<string, Set<Task>>}
    */
-  #iteratorsByType
+  #tasksByType
 
   /**
+   * Tareas
+   *
    * @type {Set<Task>}
    */
   #tasks
 
   /**
+   * Proveedor de tareas
+   *
    * @type {TaskProvider}
    */
   #provider
@@ -44,28 +57,55 @@ export default class Scheduler {
    */
   #task
 
+  /**
+   * Constructor
+   *
+   * @param {TaskProvider} provider
+   */
   constructor(provider = new TaskProvider()) {
     this.#iterators = new Map()
-    this.#iteratorsByType = new Map()
+    this.#tasksByType = new Map()
     this.#generators = new Map()
     this.#tasks = new Set()
     this.#provider = provider
   }
 
+  /**
+   *
+   * @param {string} type
+   */
   unregister(type) {
     this.#generators.delete(type)
-    this.#iteratorsByType.delete(type)
+    this.#tasksByType.delete(type)
   }
 
+  /**
+   * Registra un nuevo generador.
+   *
+   * @param {string} type
+   * @param {Generator<any, any>} generator
+   */
   register(type, generator) {
     this.#generators.set(type, generator)
-    this.#iteratorsByType.set(type, new Set())
+    this.#tasksByType.set(type, new Set())
   }
 
+  /**
+   * Obtiene las tareas por tipo.
+   *
+   * @param {string} type
+   * @returns {Set<Task>}
+   */
   get(type) {
-    return this.#iteratorsByType.get(type)
+    return this.#tasksByType.get(type)
   }
 
+  /**
+   *
+   * @param {*} type
+   * @param  {...any} args
+   * @returns
+   */
   create(type, ...args) {
     const task = this.#provider.allocate()
     const generator = this.#generators.get(type)
@@ -89,8 +129,8 @@ export default class Scheduler {
       parent[TaskChildrenSymbol].add(task)
     }
 
-    const iterators = this.#iteratorsByType.get(type)
-    iterators.add(task)
+    const tasksByType = this.#tasksByType.get(type)
+    tasksByType.add(task)
 
     this.#iterators.set(task, iterator)
     this.#tasks.add(task)
@@ -98,6 +138,9 @@ export default class Scheduler {
     return task
   }
 
+  /**
+   * Actualiza todas las tareas.
+   */
   update() {
     const sorted = Array.from(this.#iterators).sort(
       (a, b) => a[TaskPrioritySymbol] - b[TaskPrioritySymbol]
@@ -155,7 +198,7 @@ export default class Scheduler {
     task[TaskIteratorSymbol] = null
     task[TaskPrioritySymbol] = 0
 
-    const iterators = this.#iteratorsByType.get(task[TaskTypeSymbol])
+    const iterators = this.#tasksByType.get(task[TaskTypeSymbol])
     iterators.delete(task)
 
     this.#iterators.delete(task)

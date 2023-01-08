@@ -2,11 +2,29 @@ import { addEventListeners, removeEventListeners } from '../event/Helper'
 import Point from '../math/Point'
 
 export class MousePosition {
+  /**
+   * @type {Point}
+   */
   #start
+
+  /**
+   * @type {Point}
+   */
   #end
+
+  /**
+   * @type {Point}
+   */
   #current
+
+  /**
+   * @type {Point}
+   */
   #previous
 
+  /**
+   * Constructor
+   */
   constructor() {
     this.#start = new Point()
     this.#end = new Point()

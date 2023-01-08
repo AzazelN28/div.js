@@ -1,6 +1,13 @@
+import EntityComponent from './EntityComponent'
 import Task from './Task'
 
+/**
+ * Entidad
+ */
 export default class Entity extends Task {
+  /**
+   * @type {Map<*, EntityComponent>}
+   */
   #components = new Map()
 
   /**

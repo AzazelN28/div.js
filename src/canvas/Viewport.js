@@ -4,15 +4,71 @@ import Canvas from './Canvas'
 import Fullscreen from './Fullscreen'
 import ResizeMode from './ResizeMode'
 
+/**
+ * @typedef {object} ViewportConstructorOptions
+ * @property {HTMLCanvasElement} canvas
+ * @property {ResizeMode} [mode=ResizeMode.NONE]
+ * @property {number} [scale=1.0]
+ * @property {number} [width=320]
+ * @property {number} [height=200]
+ */
+
+/**
+ * Viewport
+ */
 export default class Viewport {
+  /**
+   * Canvas en el que pintaremos el juego.
+   *
+   * @type {HTMLCanvasElement}
+   */
   #canvas
+
+  /**
+   * Modo en el que reescalaremos el canvas.
+   *
+   * @type {ResizeMode}
+   */
   #mode
+
+  /**
+   * Ancho del viewport
+   *
+   * @type {number}
+   */
   #width
+
+  /**
+   * Alto del viewport
+   */
   #height
+
+  /**
+   * Escala del viewport
+   *
+   * @type {number}
+   */
   #scale
+
+  /**
+   * Rectángulo del viewport.
+   *
+   * @type {Rect}
+   */
   #rect
+
+  /**
+   * Pantalla completa.
+   *
+   * @type {Fullscreen}
+   */
   #fullscreen
 
+  /**
+   * Constructor
+   *
+   * @param {ViewportConstructorOptions} [options={}]
+   */
   constructor({ canvas, mode = ResizeMode.NONE, scale = 1.0, width = 320, height = 200 } = {}) {
     this.#canvas = canvas
     this.#mode = mode
@@ -23,6 +79,11 @@ export default class Viewport {
     this.#fullscreen = new Fullscreen(canvas)
   }
 
+  /**
+   * Pantalla completa.
+   *
+   * @type {Fullscreen}
+   */
   get fullscreen() {
     return this.#fullscreen
   }
@@ -34,6 +95,9 @@ export default class Viewport {
     this.#mode = value
   }
 
+  /**
+   * @type {ResizeMode}
+   */
   get mode() {
     return this.#mode
   }
@@ -45,6 +109,11 @@ export default class Viewport {
     this.#scale = value
   }
 
+  /**
+   * Escala
+   *
+   * @type {number}
+   */
   get scale() {
     return this.#scale
   }
@@ -56,6 +125,11 @@ export default class Viewport {
     this.#width = Math.floor(value)
   }
 
+  /**
+   * Ancho del viewport.
+   *
+   * @type {number}
+   */
   get width() {
     return this.#width
   }
@@ -67,10 +141,20 @@ export default class Viewport {
     this.#height = Math.floor(value)
   }
 
+  /**
+   * Alto del viewport.
+   *
+   * @type {number}
+   */
   get height() {
     return this.#height
   }
 
+  /**
+   * Rectángulo del viewport.
+   *
+   * @type {Rect}
+   */
   get rect() {
     return this.#rect
   }
@@ -83,6 +167,12 @@ export default class Viewport {
     }
   }
 
+  /**
+   * Actualiza el tamaño del viewport y lo redimensiona
+   * si es necesario.
+   *
+   * @returns {boolean} Si se redimensionó o no.
+   */
   update() {
     let resized = false
     if (this.#mode === ResizeMode.FILL) {
@@ -96,13 +186,20 @@ export default class Viewport {
     if (resized) {
       this.#rect.size.set(this.#canvas.width, this.#canvas.height)
     }
+    return resized
   }
 
+  /**
+   * Arranca el viewport.
+   */
   start() {
     this.#fullscreen.start()
     addEventListeners(document, ['visibilitychange'], this.#listener)
   }
 
+  /**
+   * Detiene el viewport.
+   */
   stop() {
     this.#fullscreen.stop()
     removeEventListeners(document, ['visibilitychange'], this.#listener)
