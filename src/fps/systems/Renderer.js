@@ -294,63 +294,73 @@ export default class Renderer {
       const facetedSprites = Array.from(this.#registry.get(FacetedSpriteComponent))
       const maskedSprites = facetedSprites
         .filter((sprite) => sprite.entity)
-        .map((sprite) => {
-          const spriteTransform = sprite.entity.get('transform')
-          const distance = spriteTransform.position.distanceTo(transform.position)
-          return {
-            object: sprite,
-            distance: distance
-          }
-        })
+        .map((sprite) => ({ object: sprite, distance: Infinity }))
       combinedMaskedSprites.push(...maskedSprites)
     }
     {
       const sprites = Array.from(this.#registry.get(SpriteComponent))
       const maskedSprites = sprites
         .filter((sprite) => sprite.entity)
-        .map((sprite) => {
-          const spriteTransform = sprite.entity.get('transform')
-          const distance = spriteTransform.position.distanceTo(transform.position)
-          return {
-            object: sprite,
-            distance: distance
-          }
-        })
+        .map((sprite) => ({ object: sprite, distance: Infinity }))
       combinedMaskedSprites.push(...maskedSprites)
-    }
-
-    // En view.masked en este punto tenemos las paredes, si en este punto "view.masked" es diferente
-    // de 0 significa que tenemos paredes "enmascaradas" por renderizar y necesitamos comprobar si
-    // las paredes enmascaradas intersectan con los rayos lanzados desde la vista a los "combinedMaskedSprites".
-    // Si intersectan significa que tenemos que recalcular las distancias utilizando esos puntos
-    // de intersección.
-    if (view.masked.length > 0) {
-      for (const maskedSprite of combinedMaskedSprites) {
-        const spriteTransform = maskedSprite.object.entity.get('transform')
-        const line = new Line(transform.position, spriteTransform.position)
-        for (const maskedWall of view.masked) {
-          const intersectionPoint = line.intersect(maskedWall.object.line)
-          if (intersectionPoint.isFinite) {
-            maskedWall.distance = intersectionPoint.distanceTo(transform.position)
-          }
-        }
-      }
     }
 
     view.masked.push(...combinedMaskedSprites)
 
-    const sortedMasked = view.masked.sort((a, b) => b.distance - a.distance)
+    // NOTA: Esto es bastante "intensito", habría
+    // que encontrar una mejor solución a este
+    // problema.
+    //
+    // BTW, ahora mismo lo que estamos haciendo es:
+    // 1. obtenemos el plano de la vista a partir de la dirección de la entidad vista.
+    // 2. obtenemos el plano de la vista como una línea infinita en esa dirección y desde la posición del objeto entidad.
+    // 3. reordenamos todos los objetos a partir de sus direcciones con respecto a esa línea infinita.
+    // 4. renderizamos.
+    const viewDirection = transform.direction.clone().perpLeft()
+    const viewPlane = new Line()
+    viewPlane.start.copy(transform.position)
+    viewPlane.end.copy(transform.position).add(viewDirection)
+
+    const intersectionLine = new Line()
+    intersectionLine.start.copy(transform.position)
+
+    const sortedMasked = view.masked.sort((a, b) => {
+      if (a.object instanceof Wall && b.object instanceof Wall) {
+        return (
+          b.object.line.distance(transform.position)
+          - a.object.line.distance(transform.position)
+        )
+      } else if ((a.object instanceof Wall && (b.object instanceof SpriteComponent || b.object instanceof FacetedSpriteComponent))) {
+        intersectionLine.end.copy(b.object.entity.get('transform').position)
+        const intersectionPoint = intersectionLine.intersect(a.object.line)
+        const distanceToWall = viewPlane.distance(intersectionPoint)
+        return viewPlane.distance(b.object.entity.get('transform').position)
+          - distanceToWall
+      } else if (((a.object instanceof SpriteComponent || a.object instanceof FacetedSpriteComponent)) && b.object instanceof Wall) {
+        intersectionLine.end.copy(a.object.entity.get('transform').position)
+        const intersectionPoint = intersectionLine.intersect(b.object.line)
+        const distanceToWall = viewPlane.distance(intersectionPoint)
+        return distanceToWall
+          - viewPlane.distance(a.object.entity.get('transform').position)
+      } else {
+        return (
+          viewPlane.distance(b.object.entity.get('transform').position)
+          - viewPlane.distance(a.object.entity.get('transform').position)
+        )
+      }
+    })
+
     for (const masked of sortedMasked) {
       if (masked.object instanceof Wall) {
         this.#renderMaskedWall(time, view, masked.object)
       } else if (masked.object instanceof SpriteComponent) {
-        // gl.disable(gl.DEPTH_TEST)
+        gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedSprite(time, view, masked.object)
-        // gl.enable(gl.DEPTH_TEST)
+        gl.enable(gl.DEPTH_TEST)
       } else if (masked.object instanceof FacetedSpriteComponent) {
-        // gl.disable(gl.DEPTH_TEST)
+        gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedFacetedSprite(time, view, masked.object)
-        // gl.enable(gl.DEPTH_TEST)
+        gl.enable(gl.DEPTH_TEST)
       }
       view.renderedMasked++
     }

@@ -298,6 +298,14 @@
   "spawns": [
     {
       "type": "enemy",
+      "args": [0, 0]
+    },
+    {
+      "type": "enemy",
+      "args": [64, 64]
+    },
+    {
+      "type": "enemy",
       "args": [128, 64]
     },
     {
