@@ -152,15 +152,6 @@ export default class LevelCollider {
         }
       }
 
-      // Comprueba que la entidad se haya detenido.
-      if (
-        body.collisionMode === CollisionMode.SLIDE ||
-        body.collisionMode === CollisionMode.BOUNCE
-      ) {
-        // TODO: Esto debería ser algo así como "muere cuando te pares" pero
-        // quizá debería estar en otro lugar.
-      }
-
       body.velocity.scale(body.friction ?? 1)
     }
   }

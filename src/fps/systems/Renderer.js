@@ -16,6 +16,7 @@ import FacetedSpriteComponent from '../components/FacetedSpriteComponent'
 import UISpriteComponent from '../components/UISpriteComponent'
 import UITextComponent from '../components/UITextComponent'
 import Line from '../../math/Line'
+
 export default class Renderer {
   #canvas
   /**
@@ -354,13 +355,9 @@ export default class Renderer {
       if (masked.object instanceof Wall) {
         this.#renderMaskedWall(time, view, masked.object)
       } else if (masked.object instanceof SpriteComponent) {
-        gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedSprite(time, view, masked.object)
-        gl.enable(gl.DEPTH_TEST)
       } else if (masked.object instanceof FacetedSpriteComponent) {
-        gl.disable(gl.DEPTH_TEST)
         this.#renderMaskedFacetedSprite(time, view, masked.object)
-        gl.enable(gl.DEPTH_TEST)
       }
       view.renderedMasked++
     }
@@ -662,6 +659,52 @@ export default class Renderer {
         gl,
         this.#programInfo.uniforms.u_sampler.location,
         this.#getTexture(source),
+        0
+      )
+      const { buffer } = this.#buffers.get('sprite')
+      GLU.drawQuad(gl, buffer)
+      GLU.unsetTexture(gl)
+    }
+
+    for (const component of this.#registry.get(UITextComponent)) {
+      const transform = component.entity.get('transform')
+      if (component.needsUpdate) {
+        component.update()
+
+        const texture = GLU.createTextureFromSource(gl, component.canvas)
+        this.#textures.set(component.canvas, texture)
+      }
+      vec3.set(
+        view.position,
+        transform.position.x,
+        transform.position.y,
+        transform.position.z
+      )
+
+      mat4.identity(view.model)
+      mat4.identity(view.modelViewProjection)
+      mat4.translate(view.model, view.model, view.position)
+      // TODO: Podríamos hacer un ajuste "más fino" de la rotación
+      // pero realmente con esto vale por el momento.
+      mat4.rotateZ(view.model, view.model, transform.rotation)
+      mat4.scale(view.model, view.model, [
+        component.size.x * transform.scale.x,
+        component.size.y * transform.scale.y,
+        transform.scale.z
+      ])
+      mat4.multiply(view.modelViewProjection, view.ortho, view.model)
+
+      gl.uniformMatrix4fv(
+        this.#programInfo.uniforms.u_modelViewProjection.location,
+        gl.FALSE,
+        view.modelViewProjection
+      )
+
+      gl.uniform2f(this.#programInfo.uniforms.u_flip.location, 0, 1)
+      GLU.setTexture(
+        gl,
+        this.#programInfo.uniforms.u_sampler.location,
+        this.#getTexture(component.canvas),
         0
       )
       const { buffer } = this.#buffers.get('sprite')

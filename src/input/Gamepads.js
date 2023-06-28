@@ -58,6 +58,9 @@ export default class Gamepads {
     return this.#connected
   }
 
+  /**
+   * Actualiza la lista de gamepads.
+   */
   update() {
     this.#gamepads = navigator.getGamepads()
     this.#connected = 0
@@ -70,6 +73,12 @@ export default class Gamepads {
     }
   }
 
+  /**
+   * Retorna el estado de cualquier gamepad.
+   *
+   * @param {Array} path
+   * @returns {number}
+   */
   stateOfAny(path) {
     const [, type, subindex, threshold] = path
     for (const gamepad of this.#gamepads) {
@@ -92,6 +101,12 @@ export default class Gamepads {
     return 0
   }
 
+  /**
+   * Retorna el estado de un gamepad específico.
+   *
+   * @param {Array} path
+   * @returns {number}
+   */
   stateOf(path) {
     const [index, type, subindex, threshold] = path
     if (typeof index === 'string') {

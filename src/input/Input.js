@@ -45,6 +45,9 @@ export default class Input {
     return this.#touch
   }
 
+  /**
+   * Actualiza el estado de todos los bindings definidos.
+   */
   updateBindings() {
     // Bindings del dispositivo.
     for (const [action] of this.#state) {

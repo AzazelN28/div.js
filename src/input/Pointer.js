@@ -1,41 +1,7 @@
 import { addEventListeners, removeEventListeners } from '../event/Helper'
-import Point from '../math/Point'
-
-export const PointerType = {
-  TOUCH: 'touch',
-  PEN: 'pen',
-  MOUSE: 'mouse'
-}
-
-export class PointerPosition {
-  #start
-  #end
-  #current
-  #previous
-
-  constructor() {
-    this.#start = new Point()
-    this.#end = new Point()
-    this.#current = new Point()
-    this.#previous = new Point()
-  }
-
-  get start() {
-    return this.#start
-  }
-
-  get end() {
-    return this.#end
-  }
-
-  get current() {
-    return this.#current
-  }
-
-  get previous() {
-    return this.#previous
-  }
-}
+import PointerType from './PointerType'
+import PointerPosition from './PointerPosition'
+import Vector2 from '../math/Vector2'
 
 export default class Pointer {
   #target
@@ -54,7 +20,7 @@ export default class Pointer {
     this.#target = target
     this.#buttons = new Map()
     this.#position = new PointerPosition()
-    this.#movement = new Point()
+    this.#movement = new Vector2()
     this.#type = PointerType.MOUSE
     this.#isInside = true
   }
@@ -107,6 +73,11 @@ export default class Pointer {
     return document.pointerLockElement
   }
 
+  /**
+   * Indica si el puntero está dentro del elemento `target`.
+   *
+   * @type {boolean}
+   */
   get isInside() {
     return this.#isInside
   }

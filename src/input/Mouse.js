@@ -1,53 +1,6 @@
 import { addEventListeners, removeEventListeners } from '../event/Helper'
-import Point from '../math/Point'
-
-export class MousePosition {
-  /**
-   * @type {Point}
-   */
-  #start
-
-  /**
-   * @type {Point}
-   */
-  #end
-
-  /**
-   * @type {Point}
-   */
-  #current
-
-  /**
-   * @type {Point}
-   */
-  #previous
-
-  /**
-   * Constructor
-   */
-  constructor() {
-    this.#start = new Point()
-    this.#end = new Point()
-    this.#current = new Point()
-    this.#previous = new Point()
-  }
-
-  get start() {
-    return this.#start
-  }
-
-  get end() {
-    return this.#end
-  }
-
-  get current() {
-    return this.#current
-  }
-
-  get previous() {
-    return this.#previous
-  }
-}
+import MousePosition from './MousePosition'
+import Vector2 from '../math/Vector2'
 
 export default class Mouse {
   #target
@@ -60,7 +13,7 @@ export default class Mouse {
     this.#target = target
     this.#buttons = new Map()
     this.#position = new MousePosition()
-    this.#movement = new Point()
+    this.#movement = new Vector2()
     this.#isInside = true
   }
 

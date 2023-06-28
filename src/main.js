@@ -267,6 +267,7 @@ function * PlayerBehaviour(game) {
   this.set('listener', game.registry.create(AudioListenerComponent))
 
   const weapon = game.scheduler.create('weapon', game)
+  const healthStatus = game.scheduler.create('health-status', game)
   while (true)
   {
     if (game.input.stateOf('left')) {
@@ -308,8 +309,25 @@ function * PlayerBehaviour(game) {
       body.velocity.z = 4
     }
 
-    // document.title = `${view.renderedWalls} ${view.renderedPlanes}`
+    document.title = `${view.renderedWalls} ${view.renderedPlanes}`
     yield // frame;
+  }
+}
+
+function * HealthStatusBehaviour(game) {
+  const transform = game.registry.create(TransformComponent)
+  this.set('transform', transform)
+
+  const text = game.registry.create(UITextComponent, {
+    text: 'Hello, World!'
+  })
+  this.set('renderable', text)
+
+  transform.position.x = 160
+  transform.position.y = 120
+
+  while (true) {
+    yield
   }
 }
 
@@ -405,6 +423,7 @@ game.scheduler.register('player', PlayerBehaviour)
 game.scheduler.register('projectile', ProjectileBehaviour)
 game.scheduler.register('weapon', WeaponBehaviour)
 game.scheduler.register('explosion', ExplosionBehaviour)
+game.scheduler.register('health-status', HealthStatusBehaviour)
 
 game.scheduler.create('level', game)
 
